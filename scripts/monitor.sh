@@ -536,7 +536,8 @@ load_slow_data() {
         if [ -n "$start_ts" ] && [ "$start_ts" -gt 0 ] 2>/dev/null; then
             local elapsed_secs=$((_now - start_ts))
             [ "$elapsed_secs" -lt 0 ] && elapsed_secs=0
-            F_ELAPSED+=("$(format_duration "$elapsed_secs")")
+            format_duration "$elapsed_secs"
+            F_ELAPSED+=("$_FMT")
         else
             F_ELAPSED+=("--")
         fi
@@ -692,7 +693,8 @@ load_slow_data() {
                 if [ -n "$merge_epoch" ] && [ "$merge_epoch" -gt 0 ] 2>/dev/null; then
                     local merge_ago=$((_now - merge_epoch))
                     [ "$merge_ago" -lt 0 ] && merge_ago=0
-                    CACHED_LAST_MERGE="$(format_duration "$merge_ago") ago"
+                    format_duration "$merge_ago"
+                    CACHED_LAST_MERGE="${_FMT} ago"
                 fi
             fi
         fi
@@ -732,10 +734,11 @@ render() {
     if [ -n "$PROJECT_DESC" ]; then
         header+="  ${DIM}-- ${PROJECT_DESC}${R}"
     fi
-    header+="  ${DIM}$(date '+%H:%M:%S')${R}"
+    local _ts
+    _ts=$(date '+%H:%M:%S')
+    header+="  ${DIM}${_ts}${R}"
     header+="  ${DIM}cpu ${CACHED_SELF_CPU}  mem ${CACHED_SELF_MEM}  load ${CACHED_LOAD}${R}"
-    lines+="$(printf '%b' "$header")\n"
-    lines+="\n"
+    lines+="${header}\n\n"
 
     # Progress summary -- weighted by acceptance criteria count per feature.
     # Complete features get full credit, wip features get half credit.
@@ -781,7 +784,8 @@ render() {
             tok_summary="  ${DIM}tokens: ${_FMT}${R}"
         fi
 
-        lines+="$(printf "  ${GRN}%s${R}  ${BLD}%d%%${R}  ${GRN}%d${R} done  ${YLW}%d${R} wip  ${DIM}%d pending${R}  ${DIM}(%d total)${R}%b" "$bar" "$pct" "$done_n" "$wip_n" "$pending_n" "$FEATURE_COUNT" "$tok_summary")\n"
+        printf -v _line "  ${GRN}%s${R}  ${BLD}%d%%${R}  ${GRN}%d${R} done  ${YLW}%d${R} wip  ${DIM}%d pending${R}  ${DIM}(%d total)${R}%b" "$bar" "$pct" "$done_n" "$wip_n" "$pending_n" "$FEATURE_COUNT" "$tok_summary"
+        lines+="${_line}\n"
 
         # Wave summary line
         local max_wave=0
@@ -811,12 +815,13 @@ render() {
                 [ "$w" -gt 1 ] && wave_line+="  ${DIM}|${R}  "
                 wave_line+="$w_seg"
             done
-            lines+="$(printf '%b' "$wave_line")\n"
+            lines+="${wave_line}\n"
         fi
         lines+="\n"
 
         # Table header (aligned with data rows: 2-char prefix + 22-char id + state + wave + tokens + details)
-        lines+="$(printf "${DIM}  %-22s %-5s %-4s %-10s %s${R}" "FEATURE" "STATE" "WAVE" "TOKENS" "DETAILS")\n"
+        printf -v _line "${DIM}  %-22s %-5s %-4s %-10s %s${R}" "FEATURE" "STATE" "WAVE" "TOKENS" "DETAILS"
+        lines+="${_line}\n"
 
         # Feature rows from cached arrays
         for ((idx=0; idx<FEATURE_COUNT; idx++)); do
@@ -876,7 +881,7 @@ render() {
                 local enriched_blockers=""
                 IFS=', ' read -ra _bdeps <<< "$blocked_by"
                 for _bdep in "${_bdeps[@]}"; do
-                    _bdep=$(echo "$_bdep" | tr -d ' ')
+                    _bdep="${_bdep// /}"
                     [ -z "$_bdep" ] && continue
                     local _bst="" _bagent="" _belapsed=""
                     # Look up blocker status, agent info, elapsed
@@ -923,7 +928,9 @@ render() {
             local tok_total=$((tok_in + tok_out))
             local token_text
             if [ "$tok_total" -gt 0 ]; then
-                token_text="$(format_tokens "$tok_in")/$(format_tokens "$tok_out")"
+                format_tokens "$tok_in"; local _ti="$_FMT"
+                format_tokens "$tok_out"
+                token_text="${_ti}/${_FMT}"
             else
                 token_text="--"
             fi
@@ -960,53 +967,54 @@ render() {
             [ "$tok_total" -gt 0 ] && token_color="$YLW"
 
             if [ "$idx" -eq "$SELECTED" ]; then
-                lines+="$(printf "${INV}${BLD}> %-22s${R} ${state_color}%-5s${R} ${wave_color}%-4s${R} ${token_color}%-10s${R} %b" "$display_id" "$state_text" "$wave_text" "$token_text" "$detail")\n"
+                printf -v _line "${INV}${BLD}> %-22s${R} ${state_color}%-5s${R} ${wave_color}%-4s${R} ${token_color}%-10s${R} %b" "$display_id" "$state_text" "$wave_text" "$token_text" "$detail"
             else
-                lines+="$(printf "  %-22s ${state_color}%-5s${R} ${wave_color}%-4s${R} ${token_color}%-10s${R} %b" "$display_id" "$state_text" "$wave_text" "$token_text" "$detail")\n"
+                printf -v _line "  %-22s ${state_color}%-5s${R} ${wave_color}%-4s${R} ${token_color}%-10s${R} %b" "$display_id" "$state_text" "$wave_text" "$token_text" "$detail"
             fi
+            lines+="${_line}\n"
         done
     else
-        lines+="$(printf "  ${DIM}No features in progress/${R}")\n"
+        lines+="  ${DIM}No features in progress/${R}\n"
     fi
 
     # Worktrees (from cache)
     lines+="\n"
     if [ "$CACHED_WT_COUNT" -gt 0 ]; then
-        lines+="$(printf "  ${BLD}%d active worktree%s${R}" "$CACHED_WT_COUNT" "$([ "$CACHED_WT_COUNT" -ne 1 ] && echo 's' || echo '')")\n"
+        local _s=""; [ "$CACHED_WT_COUNT" -ne 1 ] && _s="s"
+        lines+="  ${BLD}${CACHED_WT_COUNT} active worktree${_s}${R}\n"
         lines+="$CACHED_WT"
     else
-        lines+="$(printf "  ${DIM}No active worktrees${R}")\n"
+        lines+="  ${DIM}No active worktrees${R}\n"
     fi
 
     # PRs (from cache)
     if [ "$CACHED_PR_COUNT" -gt 0 ]; then
         lines+="\n"
-        lines+="$(printf "  ${BLD}%d open PR%s${R}" "$CACHED_PR_COUNT" "$([ "$CACHED_PR_COUNT" -ne 1 ] && echo 's' || echo '')")\n"
+        _s=""; [ "$CACHED_PR_COUNT" -ne 1 ] && _s="s"
+        lines+="  ${BLD}${CACHED_PR_COUNT} open PR${_s}${R}\n"
         lines+="$CACHED_PR"
     fi
 
     # Merged PRs
     if [ "$CACHED_MERGED_COUNT" -gt 0 ]; then
         local merged_text
-        merged_text="$(printf "${DIM}%d merged PR%s" "$CACHED_MERGED_COUNT" "$([ "$CACHED_MERGED_COUNT" -ne 1 ] && echo 's' || echo '')")"
+        _s=""; [ "$CACHED_MERGED_COUNT" -ne 1 ] && _s="s"
+        merged_text="${DIM}${CACHED_MERGED_COUNT} merged PR${_s}"
         [ -n "$CACHED_LAST_MERGE" ] && merged_text+="  |  last ${CACHED_LAST_MERGE}"
         merged_text+="${R}"
-        if [ "$CACHED_PR_COUNT" -eq 0 ]; then
-            lines+="\n"
-        fi
-        lines+="$(printf "  %b" "$merged_text")\n"
+        [ "$CACHED_PR_COUNT" -eq 0 ] && lines+="\n"
+        lines+="  ${merged_text}\n"
     fi
 
     # Footer
     lines+="\n"
     if [ -n "$STATUS_MSG" ]; then
-        lines+="$(printf "  ${GRN}%s${R}" "$STATUS_MSG")\n"
-        lines+="\n"
+        lines+="  ${GRN}${STATUS_MSG}${R}\n\n"
     fi
     if [ -n "$CONFIRM_ACTION" ]; then
-        lines+="$(printf "  ${YLW}%s '%s'? [y/N]${R}" "$CONFIRM_ACTION" "$CONFIRM_ID")\n"
+        lines+="  ${YLW}${CONFIRM_ACTION} '${CONFIRM_ID}'? [y/N]${R}\n"
     else
-        lines+="$(printf "  ${DIM}j/k${R} navigate  ${DIM}d${R} detail  ${DIM}l${R} log  ${DIM}p${R} pr  ${DIM}r${R} reset  ${DIM}c${R} complete  ${DIM}x${R} kill  ${DIM}m${R} merge  ${DIM}q${R} quit")\n"
+        lines+="  ${DIM}j/k${R} navigate  ${DIM}d${R} detail  ${DIM}l${R} log  ${DIM}p${R} pr  ${DIM}r${R} reset  ${DIM}c${R} complete  ${DIM}x${R} kill  ${DIM}m${R} merge  ${DIM}q${R} quit\n"
     fi
 
     # Write to screen: cursor home, overwrite, then clear remaining lines (no flicker)
@@ -1091,9 +1099,9 @@ detail_overlay() {
         if [ "$((d_tin + d_tout))" -gt 0 ]; then
             out+="\n"
             out+="$(printf "${BLD}Token usage:${R}")\n"
-            out+="$(printf "  Input:  %s  (%d)" "$(format_tokens "$d_tin")" "$d_tin")\n"
-            out+="$(printf "  Output: %s  (%d)" "$(format_tokens "$d_tout")" "$d_tout")\n"
-            out+="$(printf "  Total:  %s" "$(format_tokens "$((d_tin + d_tout))")")\n"
+            format_tokens "$d_tin"; out+="  Input:  ${_FMT}  ($d_tin)\n"
+            format_tokens "$d_tout"; out+="  Output: ${_FMT}  ($d_tout)\n"
+            format_tokens "$((d_tin + d_tout))"; out+="  Total:  ${_FMT}\n"
         fi
     fi
 
@@ -1414,7 +1422,9 @@ if [ "$ONCE" = true ]; then
             tok_total=$((tok_in + tok_out))
             tok_str="--"
             if [ "$tok_total" -gt 0 ]; then
-                tok_str="$(format_tokens "$tok_in")/$(format_tokens "$tok_out")"
+                format_tokens "$tok_in"; _ti="$_FMT"
+                format_tokens "$tok_out"
+                tok_str="${_ti}/${_FMT}"
             fi
 
             printf "  %-20s  %-6s  %-4s  %-10s  %-25s  %s\n" "$id" "$icon" "$wave_str" "$tok_str" "$branch" "${elapsed_prefix}${info}"
