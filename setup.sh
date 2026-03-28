@@ -245,6 +245,8 @@ echo "  1. Fill in Build & Dev Commands and Architecture in CLAUDE.md"
 echo "  2. Run /projd-plan to create feature files, or add them manually to progress/"
 echo "  3. Run ./scripts/validate.sh to verify everything is configured"
 
-# --- Self-remove ---
+# --- Remove template files ---
+rm -f README.md LICENSE scripts/install-skill.sh
+rm -rf .claude/skills/projd-create
 rm -- "$0"
-echo "[ok] Removed setup.sh (no longer needed)"
+echo "[ok] Removed template files (README.md, LICENSE, install-skill.sh, projd-create skill, setup.sh)"
