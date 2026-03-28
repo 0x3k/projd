@@ -1,0 +1,14 @@
+{
+  "id": "example-feature",
+  "name": "Example Feature",
+  "description": "Replace this with a real feature description.",
+  "acceptance_criteria": [
+    "Criterion 1: what must be true for this feature to be complete",
+    "Criterion 2: specific observable behavior or test that must pass"
+  ],
+  "priority": 1,
+  "status": "pending",
+  "branch": "",
+  "blocked_by": [],
+  "notes": ""
+}
