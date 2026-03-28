@@ -32,15 +32,26 @@ Do not proceed.
 
 ### 1. Gather inputs
 
-Ask the user for the following. If a project name was provided in `$ARGUMENTS`, use it and skip that prompt.
+Before asking, run `gh auth status` to check if GitHub CLI is authenticated. Remember the result for the GitHub question below.
 
-- **Project name** (required): kebab-case slug (e.g., `my-app`)
-- **Language** (required): one or more languages, comma-separated (e.g., `go`, `typescript,python`). Common choices with built-in template support: `typescript`, `go`, `python`, `swift`, `kotlin`. Any other language is accepted too. If the user says "you decide" or is unsure, infer the best language(s) from the project description and confirm with them.
-- **One-line description** (required): what the project does
-- **Target path** (default: `./<project-name>` relative to the current directory shown above)
-- **Create GitHub repo?**: Run `gh auth status` to check if the GitHub CLI is available and authenticated. Only offer this option if it shows an authenticated session. If `gh` is not available or not authenticated, skip silently (note it in output if gh is available but not authenticated, suggesting `gh auth login`). If yes: ask **private or public?** (default: private).
+**Important**: AskUserQuestion only works for multiple-choice inputs. When the user picks "Other", you do NOT receive what they typed -- you only see that they chose "Other" and must ask again. So never use AskUserQuestion for inputs that are naturally free-text (names, descriptions). Use it only for selecting from a fixed set of choices.
 
-Confirm all inputs with the user before proceeding.
+**Step 1a -- AskUserQuestion for choices:**
+
+Use a single AskUserQuestion call. Each question MUST have 2-4 options. Include these questions:
+
+1. **Language** (header: "Language", multiSelect: true): Options: `Go`, `TypeScript`, `Python`, `You choose` (you infer the best language from the project name/description and confirm with the user). The user picks "Other" to type a different language not listed.
+2. **GitHub repo** (header: "GitHub"): Only include this question if `gh auth status` showed an authenticated session. Options: "Private repo (Recommended)", "Public repo", "No GitHub repo". If gh is not authenticated, skip this question entirely (mention it in the output, suggesting `gh auth login`).
+
+**Step 1b -- Plain text for free-text inputs:**
+
+After the AskUserQuestion answers come back, print a message asking for the remaining details. If a project name was provided in `$ARGUMENTS`, use it and skip that prompt.
+
+Ask in a single message and wait for the user to reply:
+- **Project name** (required): kebab-case slug. Suggest the current directory basename as a default.
+- **One-line description** (required): what the project does.
+
+Derive the **target path** as `./<project-name>` relative to the current directory. Print the summary of all inputs (name, language, description, target path, GitHub choice) and ask the user to confirm before proceeding. If they want a different target path, let them override it.
 
 ### 2. Validate target path
 

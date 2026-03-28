@@ -1,4 +1,9 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(./scripts/skill-context.sh:*)"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
