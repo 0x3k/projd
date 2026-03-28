@@ -9,18 +9,18 @@ You are an agent starting a work session. Orient yourself before doing any imple
 ## Context
 
 Project status:
-!`./scripts/status.sh 2>&1 || echo "status.sh failed"`
+!`./scripts/skill-context.sh status`
 
 Handoff from previous session:
-!`cat HANDOFF.md 2>/dev/null || echo "No HANDOFF.md -- clean start."`
+!`./scripts/skill-context.sh handoff`
 
 Smoke test:
-!`./scripts/smoke.sh 2>&1; echo "EXIT_CODE=$?"`
+!`./scripts/skill-context.sh smoke`
 
 Features:
-!`for f in progress/*.json; do [ -f "$f" ] && jq -c '{id, name, status, priority, blocked_by, branch}' "$f" 2>/dev/null; done || echo "none"`
+!`./scripts/skill-context.sh features`
 
-Current branch: !`git branch --show-current 2>/dev/null || echo "detached"`
+Current branch: !`./scripts/skill-context.sh branch`
 
 ## Instructions
 

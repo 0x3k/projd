@@ -11,13 +11,13 @@ You are a project planner. Your job is to break requirements into discrete featu
 ## Context
 
 agent.json:
-!`cat agent.json 2>/dev/null || echo "not found"`
+!`./scripts/skill-context.sh agent-json`
 
 Project overview:
-!`head -30 CLAUDE.md 2>/dev/null || echo "no CLAUDE.md"`
+!`./scripts/skill-context.sh claude-md`
 
 Existing features:
-!`for f in progress/*.json; do [ -f "$f" ] && jq -c '{id, name, status, priority, blocked_by, branch}' "$f" 2>/dev/null; done || echo "none"`
+!`./scripts/skill-context.sh features`
 
 ## Arguments
 
