@@ -250,6 +250,26 @@ With **vibes mode** (`"auto_review": true` in `agent.json`), the loop closes its
 
 See [Parallel Agents](docs/parallel-agents.md) for the full dispatch protocol, monitor dashboard, and configuration options.
 
+## Monorepo / Multi-Project
+
+Add a `projects.json` at the root and each sub-project becomes its own projd instance -- own `CLAUDE.md`, `progress/`, and scripts. Agents work across sub-projects in parallel, and root-level features handle cross-cutting work.
+
+```
+  projects.json
+       |
+       +-- services/api/          (own CLAUDE.md, progress/, scripts)
+       |     +-- feature-a  -->  agent in worktree
+       |     +-- feature-b  -->  agent in worktree
+       |
+       +-- services/worker/       (own CLAUDE.md, progress/, scripts)
+       |     +-- feature-c  -->  agent in worktree
+       |
+       +-- root progress/         (cross-cutting features)
+             +-- feature-d  -->  agent in worktree
+```
+
+Root scripts (`status.sh`, `smoke.sh`, `init.sh`) automatically aggregate across all sub-projects. See [Multi-Project](docs/multi-project.md) for setup details.
+
 ## Landscape
 
 **projd is a project template, not a platform.** You clone it, configure it once, and the structure lives inside your repo alongside your code. Nothing to install globally, no daemon, no desktop app. The trade-off: it's opinionated about Claude Code and doesn't support other agents.
