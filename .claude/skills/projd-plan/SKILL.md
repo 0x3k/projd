@@ -27,6 +27,39 @@ Existing features:
 
 1. **Read the requirements**: If `$ARGUMENTS` looks like a file path (contains `/` or ends in `.md`, `.txt`, `.json`), read that file. Otherwise treat it as a description string.
 
+1b. **Research existing solutions (optional)**
+
+Use AskUserQuestion:
+
+1. **Research** (header: "Research"): "Research existing solutions in this space?" Options: "Quick scan (Recommended)", "Deep dive -- compare features and find gaps", "Skip".
+
+If "Skip", proceed to step 2.
+
+**Quick scan:**
+
+1. Search GitHub: `gh search repos "<keywords from requirements>" --sort stars --limit 5 --json name,description,language,stargazersCount,url`
+2. WebSearch: `<project description> open source alternatives`
+3. Summarize: top projects, their key features, common patterns.
+
+**Deep dive:**
+
+1. Everything from quick scan, plus:
+2. Read the README of the top 2-3 GitHub results using WebFetch (use the raw.githubusercontent.com URL). Extract their feature lists.
+3. WebSearch: `best <problem category> tools comparison` or `<problem category> alternatives`. Fetch 1-2 comparison/review pages with WebFetch.
+4. Present a comparison table:
+
+| Project/Product | Type | Key Features | Tech Stack | What's Missing |
+|----------------|------|--------------|------------|----------------|
+
+5. Based on gaps, suggest differentiating features the user's project could offer.
+
+**Using research results:**
+
+Reference findings in step 2 when breaking requirements into features:
+- Prioritize features that differentiate from existing solutions
+- Adopt proven patterns from successful projects where they fit
+- Note in feature descriptions when a feature is inspired by or improves on a competitor's approach
+
 2. **Break into features**: Each feature should be independently implementable. A feature is too big if it touches more than 2-3 files or takes more than one session. Err on the side of smaller features.
 
 3. **Draft feature files**: For each feature, prepare a JSON object with these fields:

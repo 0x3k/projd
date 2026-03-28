@@ -250,3 +250,15 @@ rm -f README.md LICENSE scripts/install-skill.sh
 rm -rf .claude/skills/projd-create
 rm -- "$0"
 echo "[ok] Removed template files (README.md, LICENSE, install-skill.sh, projd-create skill, setup.sh)"
+
+# --- Create project README ---
+cat > README.md << READMEEOF
+# $NAME
+
+$DESC
+
+## Getting Started
+
+See \`CLAUDE.md\` for build commands and project details.
+READMEEOF
+echo "[ok] Created README.md"
