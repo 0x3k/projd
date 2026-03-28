@@ -1,23 +1,35 @@
 # projd
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/0x3k/projd)](https://github.com/0x3k/projd)
 [![Built for Claude Code](https://img.shields.io/badge/Built_for-Claude_Code-6B5CE7)](https://claude.ai/code)
 
 **Project Daemon** -- pronounced "prodigy" `/ˈprɒdɪdʒi/` by some. We don't correct them.
 
 > A project harness for long-running and parallel AI agent sessions. You describe what you want, projd breaks it into features, and Claude builds them -- one at a time or several in parallel. You review PRs. That's the whole deal.
 
-Claude Code works great in a single sitting. But when sessions get long or you want multiple agents working at once, things fall apart: the agent loses context, commits to branches it shouldn't, starts work that conflicts with other agents, and leaves half-finished code behind. projd adds session continuity, git guardrails, a feature lifecycle with dependency tracking, and branch-per-feature isolation so agents don't step on each other.
+Claude Code works great in a single sitting. But when sessions get long or you want multiple agents working at once, things fall apart -- the agent loses context, commits to branches it shouldn't, starts work that conflicts with other agents, and leaves half-finished code behind.
+
+projd adds the missing pieces: session continuity, git guardrails, a feature lifecycle with dependency tracking, and branch-per-feature isolation so agents don't step on each other.
 
 **What you get:**
 
-- **Feature planning** -- break requirements into feature files with acceptance criteria and dependency ordering
-- **Branch-per-feature isolation** -- each agent works in its own git worktree; no conflicts
-- **Git policy enforcement** -- PreToolUse hooks block violations before they execute, not after
-- **Parallel dispatch** -- up to 20 agents in dependency-aware waves, with optional auto-review
-- **Session continuity** -- structured `HANDOFF.md` preserves context between sessions
-- **Smoke-test gates** -- features aren't marked complete until lint, typecheck, and tests pass
+- **Feature planning**
+  Break requirements into feature files with acceptance criteria and dependency ordering.
+
+- **Branch-per-feature isolation**
+  Each agent works in its own git worktree. No conflicts.
+
+- **Git policy enforcement**
+  PreToolUse hooks block violations before they execute, not after.
+
+- **Parallel dispatch**
+  Up to 20 agents in dependency-aware waves, with optional auto-review.
+
+- **Session continuity**
+  Structured `HANDOFF.md` preserves context between sessions.
+
+- **Smoke-test gates**
+  Features aren't marked complete until lint, typecheck, and tests pass.
 
 ### What it looks like
 
@@ -55,7 +67,16 @@ Run `./scripts/monitor.sh` in a second terminal for a live dashboard -- progress
 
 ### Quick Start
 
-**Prerequisites:** [Claude Code](https://claude.ai/code), [Lefthook](https://github.com/evilmartians/lefthook) (`brew install lefthook`), [jq](https://jqlang.github.io/jq/) (`brew install jq`), [gh](https://cli.github.com/) (`brew install gh`). Full guide: [Setup](docs/setup.md).
+**Prerequisites:**
+
+| Tool | Install |
+|------|---------|
+| [Claude Code](https://claude.ai/code) | See [claude.ai/code](https://claude.ai/code) |
+| [Lefthook](https://github.com/evilmartians/lefthook) | `brew install lefthook` |
+| [jq](https://jqlang.github.io/jq/) | `brew install jq` |
+| [gh](https://cli.github.com/) | `brew install gh` |
+
+Full guide: [Setup](docs/setup.md)
 
 ```bash
 ./scripts/install-skill.sh   # install the scaffolding skill (one-time)
@@ -67,18 +88,42 @@ Run `./scripts/monitor.sh` in a second terminal for a live dashboard -- progress
 /projd-hands-off              # or launch parallel agents
 ```
 
-After your first `/projd-hands-on` or `/projd-hands-off` run, check the PRs it created. The [Features](docs/features.md) doc explains the feature file format, and [Agent Controls](docs/agent-controls.md) covers how to tune git policy and dispatch behavior.
+**Next steps:** Check the PRs it created. Read [Features](docs/features.md) for the feature file format, and [Agent Controls](docs/agent-controls.md) to tune git policy and dispatch behavior.
 
 ### How it works
 
-The cycle is always the same: **scaffold** (once) > **plan** > **build** > **review** > repeat.
+```
+scaffold (once)  -->  plan  -->  build  -->  review  -->  repeat
+```
 
-1. **Scaffold** -- `/projd-create` clones the template, asks developer-or-vibes, and configures everything. Or clone manually and run `./setup.sh`.
-2. **Plan** -- `/projd-plan` breaks requirements into feature files in `progress/` with acceptance criteria and dependency ordering. Nothing gets built yet.
-3. **Build** -- `/projd-hands-on` picks the highest-priority unblocked feature and walks you through it. `/projd-hands-off` launches parallel agents, each in its own worktree. Sessions pick up where they left off via `HANDOFF.md`.
+1. **Scaffold** -- `/projd-create` clones the template, asks developer-or-vibes, and configures everything.
+   Or clone manually and run `./setup.sh`.
+
+2. **Plan** -- `/projd-plan` breaks requirements into feature files in `progress/` with acceptance criteria and dependency ordering.
+   Nothing gets built yet.
+
+3. **Build** -- `/projd-hands-on` picks the highest-priority unblocked feature and walks you through it.
+   `/projd-hands-off` launches parallel agents, each in its own worktree.
+   Sessions pick up where they left off via `HANDOFF.md`.
+
 4. **Review** -- Merge PRs. Run `/projd-plan` again when new work comes in.
 
-**Docs:** [Setup](docs/setup.md) | [Skills](docs/skills.md) | [Features](docs/features.md) | [Agent Controls](docs/agent-controls.md) | [Parallel Agents](docs/parallel-agents.md) | [Hooks](docs/hooks.md) | [Multi-Project](docs/multi-project.md) | [Troubleshooting](docs/troubleshooting.md) | [Contributing](CONTRIBUTING.md)
+<details>
+<summary><strong>Docs</strong></summary>
+
+| Topic | Link |
+|-------|------|
+| Setup | [docs/setup.md](docs/setup.md) |
+| Skills | [docs/skills.md](docs/skills.md) |
+| Features | [docs/features.md](docs/features.md) |
+| Agent Controls | [docs/agent-controls.md](docs/agent-controls.md) |
+| Parallel Agents | [docs/parallel-agents.md](docs/parallel-agents.md) |
+| Hooks | [docs/hooks.md](docs/hooks.md) |
+| Multi-Project | [docs/multi-project.md](docs/multi-project.md) |
+| Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+</details>
 
 ---
 
@@ -97,23 +142,42 @@ The cycle is always the same: **scaffold** (once) > **plan** > **build** > **rev
 
 ## Parallel Agents
 
-`/projd-hands-off` dispatches up to `max_agents` (default 20) parallel agents on independent features. Each gets its own git worktree and branch. Features with `blocked_by` dependencies are scheduled in waves -- wave 2 starts only after its blockers complete. When `auto_review` is enabled, a reviewer agent checks each PR and merges passing ones automatically.
+`/projd-hands-off` dispatches parallel agents on independent features. Each gets its own git worktree and branch.
+
+```
+progress/*.json
+      |
+      v
+  +---+---+---+         +---+---+
+  | Wave 1    |         | Wave 2 |    (blocked_by resolved)
+  +-----------+         +--------+
+  | user-auth | ------> | todo   |
+  | api-docs  |         | crud   |
+  +-----------+         +--------+
+      |                     |
+      v                     v
+  2 PRs created         1 PR created
+```
+
+Features with `blocked_by` dependencies are scheduled in waves -- wave 2 starts only after its blockers complete. When `auto_review` is enabled, a reviewer agent checks each PR and merges passing ones automatically.
 
 > [!TIP]
-> Use `--dry-run` to preview which features would be dispatched and in what order before committing to a run.
+> Use `--dry-run` to preview dispatch order before committing to a run.
 
 See [Parallel Agents](docs/parallel-agents.md) for the full dispatch protocol, monitor dashboard, and configuration options.
 
 ## Landscape
 
-**projd is a project template, not a platform.** You clone it, configure it once, and the structure lives inside your repo alongside your code. There's nothing to install globally, no daemon to run, no desktop app to keep open. The trade-off is that it's opinionated about Claude Code and doesn't support other agents.
+**projd is a project template, not a platform.** You clone it, configure it once, and the structure lives inside your repo alongside your code. Nothing to install globally, no daemon, no desktop app. The trade-off: it's opinionated about Claude Code and doesn't support other agents.
 
 What projd does that most alternatives don't:
 
-- **Git policy enforcement at the hook level.** The PreToolUse hook intercepts commands before they execute -- the agent cannot bypass branch protection, even if it tries.
-- **Session continuity via `HANDOFF.md`.** Structured handoff notes preserve context between sessions instead of relying on chat history.
-- **Dependency-aware dispatch.** Features declare `blocked_by` dependencies. The dispatcher schedules waves automatically and won't start a feature until its blockers complete.
-- **Smoke tests as a completion gate.** A feature isn't marked complete until lint, typecheck, and tests pass. Enforced by the skill, not left to judgment.
+| Capability | How |
+|------------|-----|
+| **Git policy enforcement** | PreToolUse hook intercepts commands before they execute -- the agent cannot bypass branch protection |
+| **Session continuity** | Structured `HANDOFF.md` preserves context between sessions instead of relying on chat history |
+| **Dependency-aware dispatch** | Features declare `blocked_by` dependencies; the dispatcher schedules waves and won't start blocked work |
+| **Smoke-test gates** | A feature isn't complete until lint, typecheck, and tests pass -- enforced by the skill, not judgment |
 
 See [Landscape](docs/landscape.md) for a detailed comparison with Spec Kit, Agent Orchestrator, Kagan, Emdash, Claude Squad, dmux, Plandex, and others.
 
