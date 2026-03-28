@@ -227,7 +227,7 @@ Use `--dry-run` to preview which features would be dispatched and in what order 
 The Claude Code status line shows feature progress at a glance, updated after every assistant message:
 
 ```
-Opus 4.6  main  42%  |  3/7 features  2 wip  |  2 agents  |  $1.23
+Opus 4.6  main  42%  |  3/7  2 wip  |  2 agents  |  15.2k/4.8k tok  +156/-23  12m
 ```
 
 It reads `progress/*.json` files and counts active git worktrees, so when parallel agents update feature status or create/remove worktrees, the status line reflects it on the next refresh. The status line is configured in `.claude/settings.json` and powered by `scripts/statusline.sh`.

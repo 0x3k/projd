@@ -54,8 +54,8 @@ Use a single AskUserQuestion call with the remaining choice questions:
 After the AskUserQuestion answers come back, print a message asking for the remaining details. If a project name was provided in `$ARGUMENTS`, use it and skip that prompt.
 
 Ask in a single message and wait for the user to reply:
-- **Project name** (required): kebab-case slug. Suggest the current directory basename as a default.
-- **One-line description** (required): what the project does.
+- **Project name** (required): lowercase, hyphen-separated (e.g. `recipe-api`). Suggest the current directory basename as a default.
+- **One-line description** (required): what the project does. Example: "REST API for storing and searching recipes with ingredient-based filtering"
 
 Derive the **target path** as `./<project-name>` relative to the current directory. Print the summary of all inputs (name, language, description, target path, GitHub choice) and ask the user to confirm before proceeding. If they want a different target path, let them override it.
 
@@ -64,8 +64,8 @@ Derive the **target path** as `./<project-name>` relative to the current directo
 The user wants a streamlined experience. Claude makes all technical decisions.
 
 If a project name was provided in `$ARGUMENTS`, use it. Otherwise, ask in a single message:
-- **Project name** (required): kebab-case slug. Suggest the current directory basename as a default.
-- **What does it do?** (required): one sentence about the project's purpose.
+- **Project name** (required): lowercase, hyphen-separated (e.g. `deploy-watch`). Suggest the current directory basename as a default.
+- **What does it do?** (required): one sentence about the project's purpose. Example: "CLI tool that monitors Kubernetes deployments and sends Slack alerts on failures"
 
 Based on the project description, choose the most suitable language. Do not ask the user -- just pick the best fit.
 
@@ -222,6 +222,99 @@ Update `agent.json` in the target path based on the answer:
 - If no: leave `dispatch.auto_review` as `false`
 
 The `dispatch.max_agents` default of 20 is fine for most projects. Do not ask about it -- the user can tune it later in `agent.json`.
+
+### 6e. Vibes mode permissions
+
+Skip this step if the user chose developer mode.
+
+In vibes mode, the agent should be able to work without manual approval prompts. Update `.claude/settings.json` in the target path to expand the `permissions.allow` list so common commands are auto-approved.
+
+Set `permissions.allow` to:
+
+```json
+[
+  "Bash(./scripts/*)",
+  "Bash(git *)",
+  "Bash(grep *)",
+  "Bash(rg *)",
+  "Bash(find *)",
+  "Bash(ls *)",
+  "Bash(cat *)",
+  "Bash(head *)",
+  "Bash(tail *)",
+  "Bash(wc *)",
+  "Bash(sort *)",
+  "Bash(mkdir *)",
+  "Bash(cp *)",
+  "Bash(mv *)",
+  "Bash(rm *)",
+  "Bash(chmod *)",
+  "Bash(touch *)",
+  "Bash(which *)",
+  "Bash(echo *)",
+  "Bash(printf *)",
+  "Bash(test *)",
+  "Bash(diff *)",
+  "Bash(curl *)",
+  "Bash(jq *)",
+  "Bash(gh *)",
+  "Bash(npm *)",
+  "Bash(npx *)",
+  "Bash(node *)",
+  "Bash(go *)",
+  "Bash(python *)",
+  "Bash(python3 *)",
+  "Bash(pip *)",
+  "Bash(pip3 *)",
+  "Bash(cargo *)",
+  "Bash(make *)",
+  "Bash(docker *)",
+  "Edit",
+  "Read",
+  "Write",
+  "Glob",
+  "Grep",
+  "WebFetch",
+  "WebSearch",
+  "Agent"
+]
+```
+
+Preserve the existing `statusLine` and `hooks` sections -- only update `permissions.allow`.
+
+Also add the path guard hook to the `hooks.PreToolUse` array in the same `settings.json`. This hook blocks file operations (rm, cp, mv, cat, Read, Write, Edit, etc.) that target paths outside the project directory, catching `..` traversal and absolute path escapes. Add it alongside the existing git policy hook:
+
+```json
+"hooks": {
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-git-policy.sh",
+          "timeout": 10
+        },
+        {
+          "type": "command",
+          "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-path-guard.sh",
+          "timeout": 10
+        }
+      ]
+    },
+    {
+      "matcher": "Read|Write|Edit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-path-guard.sh",
+          "timeout": 10
+        }
+      ]
+    }
+  ]
+}
+```
 
 ### 7. Complete CLAUDE.md
 
