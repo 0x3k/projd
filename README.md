@@ -51,7 +51,7 @@ If you've installed the scaffolding skill (see [Setup](#setup)), just open Claud
 /projd-create
 ```
 
-It asks for a name, language, and description. It clones the template, configures everything, interviews you about build commands and architecture, and commits. You now have a fully configured project directory. No manual file editing, no copy-paste ceremonies.
+It asks whether you're a developer or here for the vibes. Developers make every decision; vibes mode lets Claude pick the language, create a GitHub repo, and fill in the project config automatically. Either way, it clones the template, configures everything, optionally scans for similar projects, and commits. You now have a fully configured project directory. No manual file editing, no copy-paste ceremonies.
 
 Alternatively, copy the template and run `./setup.sh` yourself. It's interactive. It won't judge you.
 
@@ -81,7 +81,7 @@ If you have multiple independent features and you're feeling ambitious:
 /projd-hands-off
 ```
 
-This launches parallel agents, each in its own isolated worktree, each working on a separate feature. They don't step on each other. They each open their own PR. You merge at your leisure.
+This launches parallel agents (up to `max_agents` from `agent.json`, default 20), each in its own isolated worktree, each working on a separate feature. They don't step on each other. They each open their own PR. If `auto_review` is enabled, a reviewer agent checks each PR, runs smoke tests, fixes issues, and merges automatically. Otherwise, you merge at your leisure.
 
 **4. Repeat**
 
@@ -119,15 +119,17 @@ There is no step 3. If something goes sideways, check `progress/` to see what's 
 | File | Purpose |
 |------|---------|
 | `CLAUDE.md` | Agent instructions: session protocol, git controls, feature workflow |
-| `agent.json` | Git permission boundaries (branch protection, push control) |
+| `agent.json` | Git policy and dispatch config (branch protection, push control, parallel limits, auto-review) |
 | `progress/` | Per-feature tracking files with acceptance criteria and status |
 | `setup.sh` | Interactive wizard to configure the boilerplate for your language |
 | `scripts/validate.sh` | Verify the boilerplate was configured correctly |
 | `scripts/init.sh` | Environment bootstrap (dependencies, git hooks) |
 | `scripts/smoke.sh` | Fast lint + typecheck verification |
 | `scripts/status.sh` | Git state, feature progress, and handoff context at a glance |
+| `scripts/statusline.sh` | Claude Code status line: feature progress, agent count, context usage |
+| `scripts/monitor.sh` | Live progress dashboard for parallel agent sessions |
 | `lefthook.yml` | Pre-commit hooks (lint + typecheck) and pre-push guard |
-| `.claude/settings.json` | Claude Code hook configuration |
+| `.claude/settings.json` | Claude Code hook and status line configuration |
 | `.claude/hooks/` | Git policy enforcement hook |
 | `.claude/skills/` | projd skill family (plan, pick, start, end, dispatch, create-new) |
 | `scripts/install-skill.sh` | Install the `/projd-create` scaffolding skill to `~/.claude/skills/` |
@@ -158,7 +160,7 @@ Install the `/projd-create` skill once, then create new projects from any Claude
 /projd-create                 # from any Claude Code session
 ```
 
-The skill clones the latest template, runs setup non-interactively, and interviews you to fill in the full CLAUDE.md. When it finishes, the project is ready for `/projd-plan`.
+The skill asks developer-or-vibes, clones the latest template, runs setup, and either interviews you (developer) or auto-fills everything (vibes) to produce a complete CLAUDE.md. It can optionally scan for similar open-source projects for inspiration. When it finishes, the project is ready for `/projd-plan`.
 
 ```bash
 ./scripts/install-skill.sh --check   # show diff if skill changed
@@ -169,9 +171,9 @@ The skill clones the latest template, runs setup non-interactively, and intervie
 
 | Skill | Purpose |
 |-------|---------|
-| `/projd-plan <requirements>` | Break requirements into feature files. Does not implement. |
+| `/projd-plan <requirements>` | Break requirements into feature files. Optionally researches existing solutions for inspiration. Does not implement. |
 | `/projd-hands-on [feature-id]` | Select a feature, create branch, present acceptance criteria. You stay in the loop. |
-| `/projd-hands-off [--dry-run]` | Launch parallel agents on independent features. Tests are the quality gate. |
+| `/projd-hands-off [--dry-run]` | Launch parallel agents on independent features. Optional auto-review merges passing PRs. |
 | `/projd-create [name]` | Scaffold a new project from the template (user-level, install with `install-skill.sh`). |
 | `projd-start` | Agent orientation at session start (auto-triggered). |
 | `projd-end` | Session wrap-up: commit, push, PR (auto-triggered). |
@@ -247,11 +249,37 @@ Long-running work often spans multiple sessions. projd handles this through `HAN
 
 `HANDOFF.md` is ephemeral (listed in `.gitignore`). It exists only between sessions and is never committed.
 
-## Parallel Agent Limits
+## Parallel Agents
 
-`/projd-hands-off` caps concurrency at **3 agents** running simultaneously. If more features are eligible, they are dispatched in waves -- the next batch starts after the current one completes. Each agent runs in its own git worktree with its own feature branch, so there are no write conflicts.
+`/projd-hands-off` reads `dispatch.max_agents` from `agent.json` (default **20**). If more features are eligible than the limit, they are dispatched in waves -- the next batch starts after the current one completes. Each agent runs in its own git worktree with its own feature branch, so there are no write conflicts.
+
+When `dispatch.auto_review` is `true`, a reviewer agent is spawned for each completed PR. The reviewer runs smoke tests, verifies acceptance criteria, and merges passing PRs. If it finds issues, it fixes trivial ones inline and spawns a subagent for larger fixes. PRs that still fail after fixes are flagged for manual review.
 
 Use `--dry-run` to preview which features would be dispatched and in what order before committing to a run.
+
+## Monitoring
+
+### Status line
+
+The Claude Code status line shows feature progress at a glance, updated after every assistant message:
+
+```
+Opus 4.6  main  42%  |  3/7 features  2 wip  |  2 agents  |  $1.23
+```
+
+It reads `progress/*.json` files and counts active git worktrees, so when parallel agents update feature status or create/remove worktrees, the status line reflects it on the next refresh. The status line is configured in `.claude/settings.json` and powered by `scripts/statusline.sh`.
+
+### Monitor script
+
+For a detailed live view, run the monitor from another terminal:
+
+```bash
+./scripts/monitor.sh            # one-time snapshot
+./scripts/monitor.sh --watch    # auto-refresh every 5 seconds
+./scripts/monitor.sh --watch 3  # auto-refresh every 3 seconds
+```
+
+The monitor shows a progress bar, per-feature status table, active worktrees with branches, and open PRs from agent branches. It's useful alongside `/projd-hands-off` to watch agents work in real time.
 
 ## Verifying Your Setup
 
@@ -289,13 +317,13 @@ This space is moving fast. Here's how projd compares to other open-source tools 
 | | projd | [Agent Orchestrator](https://github.com/ComposioHQ/agent-orchestrator) | [Kagan](https://github.com/kagan-sh/kagan) | [Emdash](https://github.com/generalaction/emdash) | [Claude Squad](https://github.com/smtg-ai/claude-squad) | [dmux](https://github.com/standardagents/dmux) | [Plandex](https://github.com/plandex-ai/plandex) | [Claude Agent Teams](https://docs.claude.ai/en/docs/agent-teams) |
 |---|---|---|---|---|---|---|---|---|
 | **Approach** | Project template | Platform | TUI daemon | Desktop app | Terminal multiplexer | Terminal multiplexer | Single agent CLI | Built-in feature |
-| **Parallel agents** | Yes (worktrees, max 3) | Yes (30+ worktrees) | Yes (14+ agents) | Yes (worktrees) | Yes (tmux sessions) | Yes (tmux + worktrees) | No | Yes (worktrees) |
+| **Parallel agents** | Yes (worktrees, configurable limit) | Yes (30+ worktrees) | Yes (14+ agents) | Yes (worktrees) | Yes (tmux sessions) | Yes (tmux + worktrees) | No | Yes (worktrees) |
 | **Feature planning** | JSON files with acceptance criteria | Backlog management | Kanban board | Kanban + issue tracker sync | No | No | Plan versioning | No |
 | **Dependency tracking** | `blocked_by` fields | Yes | No | No | No | No | No | No |
 | **Git policy enforcement** | PreToolUse hook + Lefthook | Partial | No | No | No | Pre/post-merge hooks | No | No |
 | **Session handoff** | `HANDOFF.md` between sessions | No | No | No | No | No | No | No |
 | **Quality gates** | Smoke tests + pre-commit hooks | CI auto-fix | Code review flow | No | No | Hook support | Diff sandbox | No |
-| **Auto PR creation** | Yes | Yes | Yes | No | No | No | No | No |
+| **Auto PR creation** | Yes (+ optional auto-review/merge) | Yes | Yes | No | No | No | No | No |
 | **Agent support** | Claude Code | Claude Code, Codex, Aider, etc. | 14+ agents | 18+ agents | Claude Code, Codex, Aider, etc. | 11+ agents | Any LLM | Claude Code only |
 | **Interface** | CLI + files | Dashboard + CLI | TUI (keyboard-first) | macOS/Linux desktop | TUI | tmux panes | CLI | CLI |
 | **Install model** | Clone template, run `setup.sh` | `npm install` | `brew install` / binary | Download app | `go install` | `go install` | `brew install` | Built into Claude Code |
@@ -316,7 +344,7 @@ What projd doesn't do that some alternatives do:
 - **Multi-agent CLI support.** projd works with Claude Code only. If you use Codex, Aider, or other agents, look at Agent Orchestrator, dmux, or Kagan.
 - **GUI/TUI for monitoring.** projd is file-driven. If you want a visual dashboard, Emdash, Kagan, or Superset provide that.
 - **Autonomous CI remediation.** Agent Orchestrator can detect CI failures and spawn agents to fix them. projd stops at "smoke tests failed, feature not marked complete."
-- **Scale beyond a few agents.** projd caps at 3 parallel agents. If you need 30+, Agent Orchestrator or Ruflo are built for that.
+- **Scale beyond dozens of agents.** projd defaults to 20 parallel agents (configurable via `dispatch.max_agents`). If you need 30+, Agent Orchestrator or Ruflo are built for that.
 
 ### Other tools worth knowing about
 
