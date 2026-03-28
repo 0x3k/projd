@@ -22,6 +22,8 @@ agent.json:
 Features:
 !`./scripts/skill-context.sh features`
 
+Token usage: !`./scripts/skill-context.sh token-usage`
+
 ## Instructions
 
 ### Step 1: Commit
@@ -64,7 +66,11 @@ If feature is `complete` AND (`allow_push` is `"feature"` or `true`):
 1. Push the branch: `git push -u origin {branch}`
 2. Create a PR using `gh pr create`:
    - Title: the feature name
-   - Body: include a summary of changes and the acceptance criteria as a checked checklist
+   - Body: include a summary of changes, the acceptance criteria as a checked checklist, and a **Token Economy** section with the token usage from the context above (input, output, total). Example:
+     ```
+     ## Token Economy
+     1.2M input, 45.3k output (1.3M total, 8.5M cache read)
+     ```
    - Base branch: `main`
 3. Record the PR URL in the feature file `notes` field.
 
