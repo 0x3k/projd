@@ -6,6 +6,20 @@ A project template with built-in patterns for effective long-running AI agent se
 
 Based on patterns from [Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents) and production-tested conventions.
 
+## Why
+
+Claude Code works great in a single sitting. But when sessions get long or you want multiple agents working at once, things fall apart: the agent loses context between sessions, commits to branches it shouldn't, starts work that conflicts with other agents, and leaves half-finished code behind with no trail.
+
+projd adds the structure that makes long-running and parallel agent work reliable: session continuity through handoff notes, git guardrails through policy hooks, a feature lifecycle that tracks what's done and what's next, and branch-per-feature isolation so agents don't step on each other.
+
+## Prerequisites
+
+- [Claude Code](https://claude.ai/code): CLI, desktop app, or IDE extension
+- [Lefthook](https://github.com/evilmartians/lefthook): `brew install lefthook`
+- [jq](https://jqlang.github.io/jq/): `brew install jq`
+- [GitHub CLI](https://cli.github.com/): `brew install gh` (for PR creation)
+- Language-specific linters for your project (see `lefthook.yml` comments)
+
 ## Workflow: New Project
 
 You have an idea. You want a project that exists and works. Here's how that happens.
@@ -80,13 +94,6 @@ The agent reads the existing code, the feature's acceptance criteria, and any ha
 **3. That's it**
 
 There is no step 3. If something goes sideways, check `progress/` to see what's done, look at the branch's commit history for granular rollback points, and reset the feature to `pending` to retry. The codebase is always in a mergeable state because projd commits incrementally and never leaves half-finished work on a branch.
-
-## Prerequisites
-
-- [Lefthook](https://github.com/evilmartians/lefthook): `brew install lefthook`
-- [jq](https://jqlang.github.io/jq/): `brew install jq`
-- [GitHub CLI](https://cli.github.com/): `brew install gh` (for PR creation)
-- Language-specific linters for your project (see `lefthook.yml` comments)
 
 ## What's Included
 
@@ -262,7 +269,7 @@ Each feature is a JSON file in `progress/`. The filename should match the `id` (
 
 ### How enforcement works
 
-Two layers:
+Three layers:
 1. **Hook-based**: A Claude Code PreToolUse hook (`.claude/hooks/check-git-policy.sh`) reads `agent.json` and blocks git commands that violate the policy before they execute. This is the primary enforcement mechanism.
 2. **Instruction-based**: `CLAUDE.md` tells the agent to read and follow `agent.json`. The agent complies because it follows its instructions.
 3. **Lefthook**: The pre-push hook in `lefthook.yml` provides a secondary guard for git usage outside Claude Code.
@@ -317,36 +324,11 @@ For a new project or large initiative:
 
 ## Multi-Project Workspaces
 
-For projects with sub-projects (monorepos, microservices, platform repos), create a `projects.json` at the root:
+For monorepos and multi-service setups, see [docs/multi-project.md](docs/multi-project.md).
 
-```json
-{
-  "projects": [
-    {"path": "services/api", "name": "API Service", "description": "REST API"},
-    {"path": "services/worker", "name": "Worker", "description": "Background jobs"},
-    {"path": "packages/shared", "name": "Shared Lib", "description": "Common utilities"}
-  ]
-}
-```
+## License
 
-Each sub-project is a self-contained boilerplate instance (its own `CLAUDE.md`, `progress/`, scripts). Run `./setup.sh` in each one.
-
-### How aggregation works
-
-When `projects.json` exists, the root scripts automatically aggregate:
-
-| Script | Behavior |
-|--------|----------|
-| `./scripts/status.sh` | Shows status for each sub-project, then root |
-| `./scripts/smoke.sh` | Runs each sub-project's smoke checks, then root |
-| `./scripts/init.sh` | Bootstraps each sub-project, then root |
-
-### Root vs. sub-project features
-
-- **Root `progress/`**: Cross-cutting features that span multiple sub-projects
-- **Sub-project `progress/`**: Features scoped to that project
-
-An agent working in a sub-project reads both the root and sub-project `CLAUDE.md` for full context.
+MIT. See [LICENSE](LICENSE).
 
 ## File Reference
 
