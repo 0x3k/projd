@@ -1,6 +1,7 @@
 # projd
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/0x3k/projd)](https://github.com/0x3k/projd)
 [![Built for Claude Code](https://img.shields.io/badge/Built_for-Claude_Code-6B5CE7)](https://claude.ai/code)
 
 **Project Daemon** -- pronounced "prodigy" `/ˈprɒdɪdʒi/` by some. We don't correct them.
@@ -8,6 +9,15 @@
 > A project harness for long-running and parallel AI agent sessions. You describe what you want, projd breaks it into features, and Claude builds them -- one at a time or several in parallel. You review PRs. That's the whole deal.
 
 Claude Code works great in a single sitting. But when sessions get long or you want multiple agents working at once, things fall apart: the agent loses context, commits to branches it shouldn't, starts work that conflicts with other agents, and leaves half-finished code behind. projd adds session continuity, git guardrails, a feature lifecycle with dependency tracking, and branch-per-feature isolation so agents don't step on each other.
+
+**What you get:**
+
+- **Feature planning** -- break requirements into feature files with acceptance criteria and dependency ordering
+- **Branch-per-feature isolation** -- each agent works in its own git worktree; no conflicts
+- **Git policy enforcement** -- PreToolUse hooks block violations before they execute, not after
+- **Parallel dispatch** -- up to 20 agents in dependency-aware waves, with optional auto-review
+- **Session continuity** -- structured `HANDOFF.md` preserves context between sessions
+- **Smoke-test gates** -- features aren't marked complete until lint, typecheck, and tests pass
 
 ### What it looks like
 
@@ -39,30 +49,13 @@ $ /projd-hands-off
   3/3 features complete. 3 PRs ready for review.
 ```
 
-Meanwhile, in another terminal:
-
-```
-◐ projd monitor  my-app  -- A REST API with auth and todos   14:32:07
-
-  ████████████████░░░░  80%  2 done  1 wip  0 pending  (3 total)  tokens: 245k
-
-  FEATURE                STATE WAVE TOKENS     DETAILS
-  user-auth              done  --   82k/14k    agent/user-auth
-  api-docs               done  --   45k/8k     agent/api-docs
-> todo-crud              wip   w2   71k/12k    agent/todo-crud  writing tests
-
-  2 active worktrees
-  2 open PRs
-
-  j/k navigate  d detail  l log  p pr  r reset  c complete  x kill  m merge  q quit
-```
+Run `./scripts/monitor.sh` in a second terminal for a live dashboard -- progress bars, per-feature token tracking, and keyboard shortcuts to act on features directly. See [Parallel Agents](docs/parallel-agents.md) for details.
 
 ---
 
 ### Quick Start
 
-> [!NOTE]
-> Requires [Claude Code](https://claude.ai/code), [Lefthook](https://github.com/evilmartians/lefthook), [jq](https://jqlang.github.io/jq/), and [gh](https://cli.github.com/). See [Setup](docs/setup.md) for details.
+**Prerequisites:** [Claude Code](https://claude.ai/code), [Lefthook](https://github.com/evilmartians/lefthook) (`brew install lefthook`), [jq](https://jqlang.github.io/jq/) (`brew install jq`), [gh](https://cli.github.com/) (`brew install gh`). Full guide: [Setup](docs/setup.md).
 
 ```bash
 ./scripts/install-skill.sh   # install the scaffolding skill (one-time)
@@ -74,6 +67,8 @@ Meanwhile, in another terminal:
 /projd-hands-off              # or launch parallel agents
 ```
 
+After your first `/projd-hands-on` or `/projd-hands-off` run, check the PRs it created. The [Features](docs/features.md) doc explains the feature file format, and [Agent Controls](docs/agent-controls.md) covers how to tune git policy and dispatch behavior.
+
 ### How it works
 
 The cycle is always the same: **scaffold** (once) > **plan** > **build** > **review** > repeat.
@@ -82,14 +77,6 @@ The cycle is always the same: **scaffold** (once) > **plan** > **build** > **rev
 2. **Plan** -- `/projd-plan` breaks requirements into feature files in `progress/` with acceptance criteria and dependency ordering. Nothing gets built yet.
 3. **Build** -- `/projd-hands-on` picks the highest-priority unblocked feature and walks you through it. `/projd-hands-off` launches parallel agents, each in its own worktree. Sessions pick up where they left off via `HANDOFF.md`.
 4. **Review** -- Merge PRs. Run `/projd-plan` again when new work comes in.
-
----
-
-## Contents
-
-- [What's Included](#whats-included)
-- [Parallel Agents](#parallel-agents)
-- [Landscape](#landscape)
 
 **Docs:** [Setup](docs/setup.md) | [Skills](docs/skills.md) | [Features](docs/features.md) | [Agent Controls](docs/agent-controls.md) | [Parallel Agents](docs/parallel-agents.md) | [Hooks](docs/hooks.md) | [Multi-Project](docs/multi-project.md) | [Troubleshooting](docs/troubleshooting.md) | [Contributing](CONTRIBUTING.md)
 
@@ -112,16 +99,10 @@ The cycle is always the same: **scaffold** (once) > **plan** > **build** > **rev
 
 `/projd-hands-off` dispatches up to `max_agents` (default 20) parallel agents on independent features. Each gets its own git worktree and branch. Features with `blocked_by` dependencies are scheduled in waves -- wave 2 starts only after its blockers complete. When `auto_review` is enabled, a reviewer agent checks each PR and merges passing ones automatically.
 
-The Claude Code status line shows progress at a glance:
-
-```
-Opus 4.6  main  42%  |  3/7  2 wip  |  2 agents  |  15.2k/4.8k tok  +156/-23  12m
-```
-
-Run `./scripts/monitor.sh` in another terminal for the interactive dashboard shown above -- progress bars, feature table with wave and token tracking, worktree and PR status, and keyboard shortcuts to act on features directly.
-
 > [!TIP]
 > Use `--dry-run` to preview which features would be dispatched and in what order before committing to a run.
+
+See [Parallel Agents](docs/parallel-agents.md) for the full dispatch protocol, monitor dashboard, and configuration options.
 
 ## Landscape
 
@@ -137,7 +118,5 @@ What projd does that most alternatives don't:
 See [Landscape](docs/landscape.md) for a detailed comparison with Spec Kit, Agent Orchestrator, Kagan, Emdash, Claude Squad, dmux, Plandex, and others.
 
 ---
-
-**Docs:** [Setup](docs/setup.md) | [Skills](docs/skills.md) | [Features](docs/features.md) | [Agent Controls](docs/agent-controls.md) | [Hooks](docs/hooks.md) | [Troubleshooting](docs/troubleshooting.md) | [Contributing](CONTRIBUTING.md)
 
 Based on patterns from [Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents). MIT License -- see [LICENSE](LICENSE).
