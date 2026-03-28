@@ -27,26 +27,36 @@ CLAUDE.md overview:
 
 ## Instructions
 
-### 1. Identify parallelizable features
+### 1. Read dispatch config
+
+Read `agent.json` and extract the dispatch settings:
+- `dispatch.max_agents`: maximum concurrent agents (default 20 if missing)
+- `dispatch.auto_review`: whether to auto-review and merge PRs (default false if missing)
+
+Also read the git settings for branch prefix and push permissions.
+
+### 2. Identify parallelizable features
 
 From the feature summary above:
 - Filter: `status == "pending"`
 - Filter: `blocked_by` is empty, OR every ID in `blocked_by` has `status: "complete"`
 - Group into parallelizable sets: features that have no mutual `blocked_by` relationships can run simultaneously
 
-### 2. Dry run check
+### 3. Dry run check
 
 If `$ARGUMENTS` contains `--dry-run`:
 - Present the dispatch plan as a table: feature id, name, priority, will be dispatched in parallel?
+- Show dispatch config: max_agents, auto_review
+- Note how many waves are needed if eligible features exceed max_agents
 - Do NOT spawn any agents. Stop here.
 
-### 3. Read full feature files
+### 4. Read full feature files
 
 For each feature to dispatch, read the full `progress/{id}.json` to get acceptance criteria and description.
 
-### 4. Spawn agents
+### 5. Spawn worker agents
 
-For each feature (max 3 concurrent):
+For each feature (up to `max_agents` concurrent):
 
 Spawn an Agent with:
 - `isolation: "worktree"` -- gives each agent its own git working directory
@@ -66,25 +76,75 @@ Each agent prompt must include:
   7. If incomplete: set notes with progress, write HANDOFF.md
 - Key conventions from CLAUDE.md (code style, test patterns)
 
-### 5. Collect results
+If more eligible features than `max_agents`, dispatch in waves -- wait for the current batch to finish before starting the next.
 
-Wait for all agents to complete. For each:
+### 6. Collect worker results
+
+Wait for all worker agents to complete. For each:
 - Check if the feature was marked complete
 - Note any failures or partial completions
 - Collect PR URLs if created
 
-### 6. Report
+### 7. Auto-review (conditional)
 
-Present a summary table: feature id, status (complete/partial/failed), PR URL if any, notes.
+Skip this step entirely if `auto_review` is `false`.
+
+For each worker that completed successfully and created a PR, spawn a **review agent**:
+
+- `isolation: "worktree"` -- isolated working directory
+- `run_in_background: true` -- reviewers work in parallel
+
+Each review agent prompt must include:
+- The PR number and URL
+- The feature ID and all acceptance criteria
+- Instructions to:
+
+  **Step A -- Checkout and verify:**
+  1. Check out the PR: `gh pr checkout <number>`
+  2. Run `./scripts/smoke.sh`
+  3. Review the diff (`gh pr diff <number>`) against each acceptance criterion
+  4. Determine: PASS (all criteria met, smoke passes) or FAIL (with specific issues)
+
+  **Step B -- If PASS:**
+  1. Merge the PR: `gh pr merge <number> --squash --delete-branch`
+  2. Report: merged successfully
+
+  **Step C -- If FAIL:**
+  1. Assess each issue: is the fix trivial (1 line change) or non-trivial?
+  2. **Trivial fix** (1 LOC): fix it directly, commit with a descriptive message, push to the PR branch
+  3. **Non-trivial fix**: spawn a subagent (with `isolation: "worktree"`) that receives:
+     - The PR branch name
+     - The specific issues found
+     - The acceptance criteria
+     - Instructions to: check out the branch, fix the issues, run smoke, commit, and push
+  4. After fixes (direct or via subagent): re-run `./scripts/smoke.sh`
+  5. If smoke passes now: merge the PR via `gh pr merge <number> --squash --delete-branch`
+  6. If still failing: leave a review comment on the PR (`gh pr review <number> --comment --body "<issues>"`) and report as needs-attention
+
+### 8. Collect review results
+
+Wait for all review agents to complete. For each:
+- Record whether the PR was merged, fixed-and-merged, or flagged for attention
+- Collect any review comments or fix descriptions
+
+### 9. Report
+
+Present a summary table:
+
+| Feature | Worker | Review | PR | Notes |
+|---------|--------|--------|----|-------|
+| feature-id | complete/partial/failed | merged/fixed/needs-attention/skipped | URL | ... |
 
 ## Guardrails
 
-- Maximum 3 concurrent agents. If more features are eligible, dispatch in waves.
-- Do NOT retry failed agents automatically. Report failures for the operator to decide.
+- Respect `max_agents` from `agent.json` dispatch config. Default to 20 if not set.
+- Do NOT retry failed worker agents automatically. Report failures for the operator to decide.
 - Each agent gets a focused, single-feature prompt. Do not include unrelated features or exploration instructions.
+- Review agents must not modify code unrelated to the issues they found.
+- If `allow_push` is `false` in agent.json, skip both pushing and auto-review (there are no PRs to review).
 
 ## Output
 
 End with:
 
-> Dispatched [N] agents. [M] completed, [K] need attention. Review PRs when ready.
+> Dispatched [N] agents. [M] completed, [K] merged, [J] need attention.
