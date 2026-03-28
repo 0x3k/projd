@@ -27,6 +27,7 @@ cmd="${1:-help}"
 
 case "$cmd" in
     features)
+        shopt -s nullglob
         found=false
         for f in progress/*.json; do
             if [ -f "$f" ]; then
@@ -77,8 +78,9 @@ case "$cmd" in
         ;;
     smoke)
         if [ -x scripts/smoke.sh ]; then
-            ./scripts/smoke.sh 2>&1
-            echo "EXIT_CODE=$?"
+            rc=0
+            ./scripts/smoke.sh 2>&1 || rc=$?
+            echo "EXIT_CODE=$rc"
         else
             echo "scripts/smoke.sh not found"
         fi
