@@ -93,20 +93,71 @@ Full guide: [Setup](docs/setup.md)
 ### How it works
 
 ```
-scaffold (once)  -->  plan  -->  build  -->  review  -->  repeat
+  /projd-plan "requirements"
+          |
+          v
+  progress/*.json (feature files)
+          |
+    +-----+------+
+    |            |
+hands-on    hands-off
+    |            |
+    v            v
+ 1 agent    N agents
+ you watch   in parallel
+    |            |
+    v            v
+   PRs         PRs
+    |            |
+    +-----+------+
+          |
+    you review + merge
+          |
+     /projd-plan (repeat)
 ```
 
-1. **Scaffold** -- `/projd-create` clones the template, asks developer-or-vibes, and configures everything.
-   Or clone manually and run `./setup.sh`.
+**Hands-on** -- you stay in the loop with one agent:
 
-2. **Plan** -- `/projd-plan` breaks requirements into feature files in `progress/` with acceptance criteria and dependency ordering.
-   Nothing gets built yet.
+```
+  YOU                AGENT
+   |                   |
+   |  /projd-hands-on  |
+   |------------------>|
+   |                   |  reads HANDOFF.md
+   |                   |  runs smoke tests
+   |                   |  implements feature
+   |                   |  commits + pushes
+   |     PR ready      |
+   |<------------------|
+   |                   |
+   |  review + merge   |
+   |  next feature     |
+   |------------------>|
+   :     (repeat)      :
+```
 
-3. **Build** -- `/projd-hands-on` picks the highest-priority unblocked feature and walks you through it.
-   `/projd-hands-off` launches parallel agents, each in its own worktree.
-   Sessions pick up where they left off via `HANDOFF.md`.
+**Hands-off** -- agents work in parallel, you review at the end:
 
-4. **Review** -- Merge PRs. Run `/projd-plan` again when new work comes in.
+```
+  YOU             DISPATCHER           AGENTS
+   |                  |                  |
+   |  /projd-hands-off|                  |
+   |----------------->|                  |
+   |                  |  wave 1          |
+   |                  |----------------->|  agent/feature-a (worktree)
+   |                  |----------------->|  agent/feature-b (worktree)
+   |                  |                  |
+   |                  |  blockers done   |
+   |                  |  wave 2          |
+   |                  |----------------->|  agent/feature-c (worktree)
+   |                  |                  |
+   |    PRs ready     |                  |
+   |<-----------------|                  |
+   |                  |                  |
+   |  review + merge  |                  |
+```
+
+Each agent reads `HANDOFF.md` for prior context, implements against acceptance criteria, runs smoke tests, and creates a PR. `/projd-plan` again when new work comes in.
 
 <details>
 <summary><strong>Docs</strong></summary>
