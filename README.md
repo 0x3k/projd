@@ -111,7 +111,12 @@ hands-on    hands-off
     |            |
     +-----+------+
           |
-    you review + merge
+    +-----+------+
+    |            |
+you review   reviewer agent
+  + merge    (vibes mode)
+    |            |
+    +-----+------+
           |
      /projd-plan (repeat)
 ```
