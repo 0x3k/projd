@@ -92,7 +92,7 @@ Git rules:
 
 Dispatch rules:
 - **Max agents**: Maximum number of parallel agents that `/projd-hands-off` will spawn concurrently. If more features are eligible, dispatch in waves.
-- **Auto review**: If true, `/projd-hands-off` spawns a reviewer agent for each completed PR. The reviewer runs smoke tests, verifies acceptance criteria, fixes trivial issues inline (or spawns a subagent for larger fixes), and merges passing PRs automatically. If false, PRs are left for the operator to review.
+- **Auto review** (vibes mode): If true, `/projd-hands-off` spawns a reviewer agent for each completed PR. The reviewer runs smoke tests, verifies acceptance criteria, fixes trivial issues inline (or spawns a subagent for larger fixes), and merges passing PRs automatically -- updating `progress/{id}.json` to `"complete"` and cleaning up the worktree after each merge. If false, PRs are left for the operator to review.
 
 These rules are enforced by a PreToolUse hook in `.claude/hooks/check-git-policy.sh`. The hook blocks violations before commands execute.
 

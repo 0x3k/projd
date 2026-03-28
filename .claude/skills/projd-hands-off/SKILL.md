@@ -107,7 +107,9 @@ Each review agent prompt must include:
 
   **Step B -- If PASS:**
   1. Merge the PR: `gh pr merge <number> --squash --delete-branch`
-  2. Report: merged successfully
+  2. In the **main repo** (not the worktree), pull latest main and update `progress/{feature-id}.json`: set `"status": "complete"`; commit this update to main
+  3. Remove the feature's worktree: `git worktree remove --force <path>` (if it exists)
+  4. Report: merged successfully
 
   **Step C -- If FAIL:**
   1. Assess each issue: is the fix trivial (1 line change) or non-trivial?
@@ -118,7 +120,10 @@ Each review agent prompt must include:
      - The acceptance criteria
      - Instructions to: check out the branch, fix the issues, run smoke, commit, and push
   4. After fixes (direct or via subagent): re-run `./scripts/smoke.sh`
-  5. If smoke passes now: merge the PR via `gh pr merge <number> --squash --delete-branch`
+  5. If smoke passes now:
+     a. Merge the PR via `gh pr merge <number> --squash --delete-branch`
+     b. In the **main repo** (not the worktree), pull latest main and update `progress/{feature-id}.json`: set `"status": "complete"`; commit this update to main
+     c. Remove the feature's worktree: `git worktree remove --force <path>` (if it exists)
   6. If still failing: leave a review comment on the PR (`gh pr review <number> --comment --body "<issues>"`) and report as needs-attention
 
 ### 8. Collect review results

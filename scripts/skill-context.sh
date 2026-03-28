@@ -85,6 +85,41 @@ case "$cmd" in
             echo "scripts/smoke.sh not found"
         fi
         ;;
+    token-usage)
+        branch=$(git branch --show-current 2>/dev/null || echo "")
+        if [ -z "$branch" ]; then
+            echo "no branch detected"
+            exit 0
+        fi
+        project_slug=$(echo "$PROJECT_DIR" | sed 's|/|-|g')
+        jsonl_dir="$HOME/.claude/projects/$project_slug"
+        if [ ! -d "$jsonl_dir" ]; then
+            echo "no session data"
+            exit 0
+        fi
+        sums=$(grep -h '"usage"' "$jsonl_dir"/*.jsonl 2>/dev/null | \
+            jq -r "select(.message.usage != null and .gitBranch == \"$branch\") |
+                .message.usage |
+                \"\(.input_tokens // 0) \(.output_tokens // 0) \(.cache_creation_input_tokens // 0) \(.cache_read_input_tokens // 0)\"" 2>/dev/null | \
+            awk '{in_t += $1 + $3; out_t += $2; cache_r += $4} END {printf "%d %d %d", in_t+0, out_t+0, cache_r+0}')
+        read -r tin tout tcache <<< "$sums"
+        total=$((tin + tout))
+        if [ "$total" -eq 0 ]; then
+            echo "no token data for branch $branch"
+            exit 0
+        fi
+        fmt() {
+            local n="$1"
+            if [ "$n" -ge 1000000 ]; then
+                awk "BEGIN { printf \"%.1fM\", $n / 1000000 }"
+            elif [ "$n" -ge 1000 ]; then
+                awk "BEGIN { printf \"%.1fk\", $n / 1000 }"
+            else
+                printf "%d" "$n"
+            fi
+        }
+        echo "$(fmt "$tin") input, $(fmt "$tout") output ($(fmt "$total") total, $(fmt "$tcache") cache read)"
+        ;;
     gh-auth)
         gh auth status 2>&1 || echo "gh: not available or not authenticated"
         ;;
@@ -93,6 +128,7 @@ case "$cmd" in
         echo ""
         echo "Subcommands: features agent-json claude-md branch git-status"
         echo "             git-diff-stat handoff status smoke gh-auth"
+        echo "             token-usage"
         ;;
     *)
         echo "Unknown subcommand: $cmd"
