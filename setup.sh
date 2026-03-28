@@ -245,6 +245,43 @@ echo "  1. Fill in Build & Dev Commands and Architecture in CLAUDE.md"
 echo "  2. Run /projd-plan to create feature files, or add them manually to progress/"
 echo "  3. Run ./scripts/validate.sh to verify everything is configured"
 
+# --- Generate upgrade manifest ---
+mkdir -p .projd
+
+# Store the template source for future upgrades
+REMOTE_URL=$(git remote get-url origin 2>/dev/null || true)
+if [ -n "$REMOTE_URL" ]; then
+    echo "$REMOTE_URL" > .projd/source
+fi
+
+# Compute checksums of template infrastructure files
+TEMPLATE_FILES=(
+    ".claude/hooks/check-git-policy.sh"
+    ".claude/hooks/check-path-guard.sh"
+    ".claude/skills/projd-start/SKILL.md"
+    ".claude/skills/projd-end/SKILL.md"
+    ".claude/skills/projd-plan/SKILL.md"
+    ".claude/skills/projd-hands-on/SKILL.md"
+    ".claude/skills/projd-hands-off/SKILL.md"
+    "scripts/init.sh"
+    "scripts/monitor.sh"
+    "scripts/skill-context.sh"
+    "scripts/smoke.sh"
+    "scripts/status.sh"
+    "scripts/statusline.sh"
+    "scripts/validate.sh"
+    "scripts/upgrade.sh"
+    "lefthook.yml"
+)
+: > .projd/manifest
+for tf in "${TEMPLATE_FILES[@]}"; do
+    if [ -f "$tf" ]; then
+        cs=$(shasum -a 256 "$tf" | awk '{print $1}')
+        printf '%s\t%s\n' "$tf" "$cs" >> .projd/manifest
+    fi
+done
+echo "[ok] Generated upgrade manifest (.projd/manifest)"
+
 # --- Remove template files ---
 rm -f README.md LICENSE scripts/install-skill.sh
 rm -rf .claude/skills/projd-create

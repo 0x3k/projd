@@ -147,6 +147,13 @@ Pass languages as a comma-separated string (e.g., `--lang "go,python"`). This ac
 
 If setup.sh fails, report the error. Do NOT delete the target directory -- leave it for manual recovery. Stop.
 
+After setup completes, write the template source URL so future upgrades can find it:
+
+```bash
+mkdir -p "<target-path>/.projd"
+echo "<BOILERPLATE_REMOTE_URL>" > "<target-path>/.projd/source"
+```
+
 ### 6b. Add language support for non-template languages
 
 If any of the chosen languages do NOT have built-in template blocks (i.e., they are not one of `typescript`, `go`, `python`, `swift`, `kotlin`), you must manually add equivalent content to the three template files. Use the existing blocks as a guide for the format and add idiomatic tooling for the language.

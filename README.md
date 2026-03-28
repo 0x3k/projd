@@ -90,7 +90,8 @@ Merge PRs. Run `/projd-plan` again when new work comes in. If something goes sid
 | `scripts/smoke.sh` | Fast lint + typecheck verification |
 | `scripts/status.sh` | Git state, feature progress, and handoff context at a glance |
 | `scripts/statusline.sh` | Claude Code status line: feature progress, agent count, context usage |
-| `scripts/monitor.sh` | Live progress dashboard for parallel agent sessions |
+| `scripts/monitor.sh` | Interactive progress dashboard for parallel agent sessions |
+| `scripts/upgrade.sh` | Update template files to the latest version with user-change detection |
 | `lefthook.yml` | Pre-commit hooks (lint + typecheck) and pre-push guard |
 | `.claude/settings.json` | Claude Code hook and status line configuration |
 | `.claude/hooks/` | Git policy enforcement hook |
