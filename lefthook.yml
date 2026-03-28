@@ -60,5 +60,18 @@ pre-push:
             echo "Push blocked by agent.json (allow_push: false)"
             echo "Operator override: git push --no-verify"
             exit 1
+          elif [ "$ALLOW" = "feature" ]; then
+            PREFIX=$(jq -r '.git.branch_prefix // ""' agent.json)
+            BRANCH=$(git branch --show-current 2>/dev/null || echo "")
+            if [ -n "$PREFIX" ] && [ -n "$BRANCH" ]; then
+              case "$BRANCH" in
+                "$PREFIX"*) ;;
+                *)
+                  echo "Push blocked: branch '$BRANCH' does not match prefix '$PREFIX' (allow_push: feature)"
+                  echo "Operator override: git push --no-verify"
+                  exit 1
+                  ;;
+              esac
+            fi
           fi
         fi

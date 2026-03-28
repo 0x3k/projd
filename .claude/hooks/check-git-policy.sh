@@ -79,13 +79,23 @@ if echo "$COMMAND" | grep -qE 'git\s+push'; then
                     deny "Push blocked: branch '$CURRENT_BRANCH' does not start with prefix '$BRANCH_PREFIX'. Only feature branches can be pushed (allow_push: feature)."
                 fi
             fi
-            # Also check refspec for protected branch targets
-            if echo "$COMMAND" | grep -qE 'git\s+push\s+\S+\s+\S*:' && [ ${#PROTECTED_BRANCHES[@]} -gt 0 ]; then
-                REFSPEC_TARGET=$(echo "$COMMAND" | sed -E 's/.*git[[:space:]]+push[[:space:]]+[^[:space:]]+[[:space:]]+[^[:space:]]*:([^[:space:]]+).*/\1/')
-                for p in "${PROTECTED_BRANCHES[@]}"; do
-                    if [ "$REFSPEC_TARGET" = "$p" ]; then
-                        deny "Push blocked: cannot push to protected branch '$p' via refspec."
+            # Check push arguments for protected branch targets
+            if echo "$COMMAND" | grep -qE 'git\s+push\s+\S+\s+\S+' && [ ${#PROTECTED_BRANCHES[@]} -gt 0 ]; then
+                PUSH_ARGS=$(echo "$COMMAND" | sed -E 's/.*git[[:space:]]+push[[:space:]]+[^[:space:]]+[[:space:]]+(.*)/\1/')
+                for arg in $PUSH_ARGS; do
+                    # Skip flags
+                    [[ "$arg" == -* ]] && continue
+                    # Extract target from refspec (src:dst) or use arg as-is
+                    if [[ "$arg" == *:* ]]; then
+                        TARGET="${arg##*:}"
+                    else
+                        TARGET="$arg"
                     fi
+                    for p in "${PROTECTED_BRANCHES[@]}"; do
+                        if [ "$TARGET" = "$p" ]; then
+                            deny "Push blocked: cannot push to protected branch '$p'."
+                        fi
+                    done
                 done
             fi
             ;;
@@ -111,7 +121,7 @@ if echo "$COMMAND" | grep -qE 'git\s+commit'; then
 fi
 
 # --- Check d: Branch creation without prefix ---
-if echo "$COMMAND" | grep -qE 'git\s+(checkout\s+-b|switch\s+-c)\s+'; then
+if echo "$COMMAND" | grep -qE 'git\s+(checkout\s+-[bB]|switch\s+-[cC])\s+'; then
     if [ -n "$BRANCH_PREFIX" ]; then
         NEW_BRANCH=$(echo "$COMMAND" | sed -E 's/.*git[[:space:]]+(checkout[[:space:]]+-b|switch[[:space:]]+-c)[[:space:]]+([^[:space:]]+).*/\2/')
         if [[ "$NEW_BRANCH" != "${BRANCH_PREFIX}"* ]]; then

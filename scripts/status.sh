@@ -141,7 +141,7 @@ if git rev-parse --is-inside-work-tree &>/dev/null; then
         echo "--- Active Worktrees ---"
         git worktree list 2>/dev/null | while IFS= read -r line; do
             # Skip the main worktree (first line)
-            if echo "$line" | grep -q '\[bare\]\|'"$PROJECT_DIR"''; then
+            if echo "$line" | grep -qE '\[bare\]|'"$PROJECT_DIR"''; then
                 continue
             fi
             echo "  $line"
