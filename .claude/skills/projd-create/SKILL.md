@@ -178,7 +178,7 @@ Skip this step entirely if all chosen languages have built-in template support.
 
 If the user chose "No GitHub repo" (developer path) or is in vibes mode (always local-only):
 
-1. Update `agent.json` in the target path -- set `allow_push` to `false`:
+1. Update `agent.json` in the target path -- set `allow_push` to `false` and `auto_review` to `false` (no PRs to review without a remote):
 
 ```json
 {
@@ -188,6 +188,10 @@ If the user chose "No GitHub repo" (developer path) or is in vibes mode (always 
     "allow_push": false,
     "allow_force_push": false,
     "auto_commit": true
+  },
+  "dispatch": {
+    "max_agents": 20,
+    "auto_review": false
   }
 }
 ```
@@ -200,6 +204,20 @@ If the user chose "No GitHub repo" (developer path) or is in vibes mode (always 
 ```
 
 Skip this step if the user chose a GitHub repo (private or public).
+
+### 6d. Dispatch configuration (developer mode only)
+
+Skip this step in vibes mode (defaults are set automatically -- see step 7).
+
+If the user chose a GitHub repo (private or public), use AskUserQuestion:
+
+1. **Auto-review** (header: "Auto-review"): "Should agents auto-review and merge PRs from parallel workers?" Options: "Yes -- review, fix, and merge automatically", "No -- I review PRs myself (Recommended)".
+
+Update `agent.json` in the target path based on the answer:
+- If yes: set `dispatch.auto_review` to `true`
+- If no: leave `dispatch.auto_review` as `false`
+
+The `dispatch.max_agents` default of 20 is fine for most projects. Do not ask about it -- the user can tune it later in `agent.json`.
 
 ### 7. Complete CLAUDE.md
 

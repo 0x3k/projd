@@ -75,16 +75,24 @@ Read `agent.json` before any git operation. It defines what you are allowed to d
     "allow_push": "feature",
     "allow_force_push": false,
     "auto_commit": true
+  },
+  "dispatch": {
+    "max_agents": 20,
+    "auto_review": false
   }
 }
 ```
 
-Rules:
+Git rules:
 - **Branch prefix**: Always create branches with the configured prefix (e.g., `agent/feature-name`)
 - **Protected branches**: Never commit directly to these branches. Always work on a feature branch.
 - **Push**: `"feature"` allows pushing branches that start with the configured prefix. `false` blocks all pushes. `true` allows all pushes.
 - **Force push**: If `allow_force_push` is false, never force-push under any circumstances.
 - **Auto commit**: If true, commit after each meaningful unit of work. If false, stage changes but let the operator commit.
+
+Dispatch rules:
+- **Max agents**: Maximum number of parallel agents that `/projd-hands-off` will spawn concurrently. If more features are eligible, dispatch in waves.
+- **Auto review**: If true, `/projd-hands-off` spawns a reviewer agent for each completed PR. The reviewer runs smoke tests, verifies acceptance criteria, fixes trivial issues inline (or spawns a subagent for larger fixes), and merges passing PRs automatically. If false, PRs are left for the operator to review.
 
 These rules are enforced by a PreToolUse hook in `.claude/hooks/check-git-policy.sh`. The hook blocks violations before commands execute.
 
