@@ -200,3 +200,4 @@ Git policies from `agent.json` are enforced by a Claude Code PreToolUse hook (`.
 ## Code Conventions
 
 - Never use emojis in code or comments
+- Use `git -C <path>` instead of `cd <path> && git` when running git commands in another directory. This avoids compound shell commands and matches the `Bash(git *)` auto-approve rule.
