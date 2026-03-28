@@ -69,9 +69,11 @@ If a project name was provided in `$ARGUMENTS`, use it. Otherwise, ask in a sing
 
 Based on the project description, choose the most suitable language. Do not ask the user -- just pick the best fit.
 
-Set GitHub to **no remote** (local-only). Do not ask.
+For GitHub: check the `gh auth status` result from earlier.
+- If `gh` is authenticated: default to **private repo**. Do not ask.
+- If `gh` is not authenticated: default to **no remote** (local-only). Do not ask.
 
-Derive the **target path** as `./<project-name>`. Print a brief summary (name, language you picked, description, local-only) and ask the user to confirm. Keep it short -- one confirmation, not a multi-step interview.
+Derive the **target path** as `./<project-name>`. Print a brief summary (name, language you picked, description, GitHub choice) and ask the user to confirm. Keep it short -- one confirmation, not a multi-step interview.
 
 ### 1d. Market scan (optional)
 
@@ -176,7 +178,7 @@ Skip this step entirely if all chosen languages have built-in template support.
 
 ### 6c. Local-only git configuration
 
-If the user chose "No GitHub repo" (developer path) or is in vibes mode (always local-only):
+If no GitHub repo was chosen (either explicitly in developer mode, or because `gh` was not authenticated in vibes mode):
 
 1. Update `agent.json` in the target path -- set `allow_push` to `false` and `auto_review` to `false` (no PRs to review without a remote):
 
@@ -205,11 +207,13 @@ If the user chose "No GitHub repo" (developer path) or is in vibes mode (always 
 
 Skip this step if the user chose a GitHub repo (private or public).
 
-### 6d. Dispatch configuration (developer mode only)
+### 6d. Dispatch configuration
 
-Skip this step in vibes mode (defaults are set automatically -- see step 7).
+Skip this step if no GitHub repo was configured (step 6c already set `auto_review: false`).
 
-If the user chose a GitHub repo (private or public), use AskUserQuestion:
+**Vibes mode** (with GitHub repo): set `dispatch.auto_review` to `true` in `agent.json`. Do not ask -- full automation is the point.
+
+**Developer mode** (with GitHub repo): use AskUserQuestion:
 
 1. **Auto-review** (header: "Auto-review"): "Should agents auto-review and merge PRs from parallel workers?" Options: "Yes -- review, fix, and merge automatically", "No -- I review PRs myself (Recommended)".
 
@@ -307,9 +311,9 @@ cd "<target-path>" && git add -A && git commit -m "Initial project from projd"
 
 ### 10. GitHub repo (conditional)
 
-Skip entirely if local-only (vibes mode or "No GitHub repo").
+Skip entirely if local-only ("No GitHub repo" or `gh` not authenticated in vibes mode).
 
-Only if the user opted in at step 1:
+Only if a GitHub repo was chosen (developer mode) or auto-selected (vibes mode with `gh` authenticated):
 
 ```bash
 cd "<target-path>" && gh repo create "<name>" --private --source . --push
