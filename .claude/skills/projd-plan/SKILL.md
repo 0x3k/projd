@@ -25,7 +25,16 @@ Existing features:
 
 ## Instructions
 
-1. **Read the requirements**: If `$ARGUMENTS` looks like a file path (contains `/` or ends in `.md`, `.txt`, `.json`), read that file. Otherwise treat it as a description string.
+1. **Read the requirements**:
+
+If `$ARGUMENTS` is non-empty: use it directly. If it looks like a file path (contains `/` or ends in `.md`, `.txt`, `.json`), read that file. Otherwise treat it as a description string.
+
+If `$ARGUMENTS` is empty: use AskUserQuestion:
+
+1. **Requirements** (header: "What should this project do?"): Options:
+   - `Auto-generate from project context -- I'll refine it` -- Read the project overview from CLAUDE.md, existing features in progress/, and the codebase structure to draft a requirements description. Present it to the user and ask for feedback. Revise until they approve.
+   - `I'll type a description -- describe what the project should do in my own words` -- After the user picks this, ask them to type their description in a follow-up message.
+   - `Point to a file -- provide a path to a requirements doc (.md, .txt, .json)` -- After the user picks this, ask for the file path in a follow-up message, then read that file.
 
 1b. **Research existing solutions (optional)**
 
