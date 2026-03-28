@@ -157,6 +157,37 @@ hands-on    hands-off
    |  review + merge  |                  |
 ```
 
+**Hands-off with vibes mode** (`auto_review: true`) -- fully autonomous. A reviewer agent checks each PR, fixes issues, and merges passing ones without you:
+
+```
+  YOU             DISPATCHER           AGENTS            REVIEWER
+   |                  |                  |                  |
+   |  /projd-hands-off|                  |                  |
+   |----------------->|                  |                  |
+   |                  |  wave 1          |                  |
+   |                  |----------------->|  feature-a       |
+   |                  |----------------->|  feature-b       |
+   |                  |                  |                  |
+   |                  |    PR ready      |                  |
+   |                  |                  |----------------->|
+   |                  |                  |   smoke tests    |
+   |                  |                  |   check criteria |
+   |                  |                  |                  |
+   |                  |                  |   pass? merge    |
+   |                  |                  |<-- auto-merged --|
+   |                  |                  |                  |
+   |                  |                  |   fail? fix+retry|
+   |                  |                  |   still fail?    |
+   |  flagged for you |                  |   flag for human |
+   |<----------------------------------------------------- |
+   |                  |                  |                  |
+   |                  |  wave 2 begins   |                  |
+   |                  |  (blockers merged)|                 |
+   |                  |----------------->|  feature-c       |
+```
+
+Set `"auto_review": true` in `agent.json` to enable vibes mode. The reviewer runs smoke tests, verifies acceptance criteria, and merges passing PRs. If it finds issues, it fixes trivial ones inline and spawns a subagent for larger fixes. PRs that still fail after fixes are flagged for manual review.
+
 Each agent reads `HANDOFF.md` for prior context, implements against acceptance criteria, runs smoke tests, and creates a PR. `/projd-plan` again when new work comes in.
 
 <details>
@@ -210,7 +241,9 @@ progress/*.json
   2 PRs created         1 PR created
 ```
 
-Features with `blocked_by` dependencies are scheduled in waves -- wave 2 starts only after its blockers complete. When `auto_review` is enabled, a reviewer agent checks each PR and merges passing ones automatically.
+Features with `blocked_by` dependencies are scheduled in waves -- wave 2 starts only after its blockers complete.
+
+With **vibes mode** (`"auto_review": true` in `agent.json`), the loop closes itself -- a reviewer agent checks each PR, fixes what it can, and merges passing ones automatically. You only get pulled in when something fails twice.
 
 > [!TIP]
 > Use `--dry-run` to preview dispatch order before committing to a run.
