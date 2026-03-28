@@ -6,12 +6,13 @@ set -euo pipefail
 # Interactive:  ./setup.sh
 # Scripted:     ./setup.sh --name my-app --lang typescript --desc "My app"
 #
-# Supported languages: typescript, go, python, swift, kotlin
+# Languages with built-in template support: typescript, go, python, swift, kotlin
+# Any language is accepted; unsupported ones skip template activation.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-SUPPORTED_LANGS="typescript go python swift kotlin"
+TEMPLATE_LANGS="typescript go python swift kotlin"
 
 # --- Parse flags ---
 NAME=""
@@ -24,9 +25,10 @@ while [[ $# -gt 0 ]]; do
         --lang) LANG="$2"; shift 2 ;;
         --desc|--description) DESC="$2"; shift 2 ;;
         --help|-h)
-            echo "Usage: ./setup.sh [--name NAME] [--lang LANG] [--desc DESCRIPTION]"
+            echo "Usage: ./setup.sh [--name NAME] [--lang LANG[,LANG,...]] [--desc DESCRIPTION]"
             echo ""
-            echo "Supported languages: $SUPPORTED_LANGS"
+            echo "Languages with template support: $TEMPLATE_LANGS"
+            echo "Any language is accepted (comma-separated for multiple)."
             echo ""
             echo "If flags are omitted, you will be prompted interactively."
             exit 0
@@ -41,8 +43,9 @@ if [ -z "$NAME" ]; then
 fi
 
 if [ -z "$LANG" ]; then
-    echo "Supported languages: $SUPPORTED_LANGS"
-    read -rp "Language: " LANG
+    echo "Languages with template support: $TEMPLATE_LANGS"
+    echo "Any language is accepted (comma-separated for multiple, e.g. go,python)"
+    read -rp "Language(s): " LANG
 fi
 
 if [ -z "$DESC" ]; then
@@ -55,25 +58,33 @@ if [ -z "$NAME" ]; then
     exit 1
 fi
 
-VALID=false
-for L in $SUPPORTED_LANGS; do
-    if [ "$LANG" = "$L" ]; then
-        VALID=true
-        break
-    fi
-done
+# Normalize: strip spaces, convert comma-separated to space-separated
+LANG=$(echo "$LANG" | tr ',' ' ' | xargs)
 
-if [ "$VALID" = false ]; then
-    echo "ERROR: unsupported language '$LANG'"
-    echo "Supported: $SUPPORTED_LANGS"
+if [ -z "$LANG" ]; then
+    echo "ERROR: at least one language is required"
     exit 1
 fi
 
+# Note languages without built-in template blocks
+for L in $LANG; do
+    HAS_TEMPLATE=false
+    for T in $TEMPLATE_LANGS; do
+        if [ "$L" = "$T" ]; then
+            HAS_TEMPLATE=true
+            break
+        fi
+    done
+    if [ "$HAS_TEMPLATE" = false ]; then
+        echo "NOTE: '$L' has no template blocks -- add lint/smoke/init config manually"
+    fi
+done
+
 echo ""
 echo "=== Configuring project ==="
-echo "  Name:     $NAME"
-echo "  Language: $LANG"
-echo "  Desc:     $DESC"
+echo "  Name:      $NAME"
+echo "  Languages: $LANG"
+echo "  Desc:      $DESC"
 echo ""
 
 # --- Activate language blocks ---
@@ -133,11 +144,13 @@ activate_lang() {
     mv "$tmpfile" "$file"
 }
 
-for f in lefthook.yml scripts/smoke.sh scripts/init.sh; do
-    if [ -f "$f" ]; then
-        activate_lang "$f" "$LANG"
-        echo "[ok] Activated $LANG blocks in $f"
-    fi
+for L in $LANG; do
+    for f in lefthook.yml scripts/smoke.sh scripts/init.sh; do
+        if [ -f "$f" ]; then
+            activate_lang "$f" "$L"
+        fi
+    done
+    echo "[ok] Activated $L blocks in template files"
 done
 
 # --- Remove placeholder command and setup comment from lefthook.yml ---
@@ -157,14 +170,25 @@ fi
 
 # --- Update CLAUDE.md ---
 if [ -f CLAUDE.md ]; then
-    case "$LANG" in
-        typescript) LANG_DISPLAY="TypeScript" ;;
-        go) LANG_DISPLAY="Go" ;;
-        python) LANG_DISPLAY="Python" ;;
-        swift) LANG_DISPLAY="Swift" ;;
-        kotlin) LANG_DISPLAY="Kotlin" ;;
-        *) LANG_DISPLAY="$LANG" ;;
-    esac
+    LANG_DISPLAY=""
+    for L in $LANG; do
+        case "$L" in
+            typescript) D="TypeScript" ;;
+            go) D="Go" ;;
+            python) D="Python" ;;
+            swift) D="Swift" ;;
+            kotlin) D="Kotlin" ;;
+            rust) D="Rust" ;;
+            java) D="Java" ;;
+            ruby) D="Ruby" ;;
+            *) D="$L" ;;
+        esac
+        if [ -z "$LANG_DISPLAY" ]; then
+            LANG_DISPLAY="$D"
+        else
+            LANG_DISPLAY="$LANG_DISPLAY, $D"
+        fi
+    done
 
     # Remove the template guard section (between "## Template Guard" and "---")
     tmpfile=$(mktemp)
