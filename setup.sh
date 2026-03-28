@@ -6,27 +6,29 @@ set -euo pipefail
 # Interactive:  ./setup.sh
 # Scripted:     ./setup.sh --name my-app --lang typescript --desc "My app"
 #
-# Supported languages: typescript, go, python, swift, kotlin
+# Languages with built-in template support: typescript, go, python, swift, kotlin
+# Any language is accepted; unsupported ones skip template activation.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-SUPPORTED_LANGS="typescript go python swift kotlin"
+TEMPLATE_LANGS="typescript go python swift kotlin"
 
 # --- Parse flags ---
 NAME=""
-LANG=""
+LANGS=""
 DESC=""
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         --name) NAME="$2"; shift 2 ;;
-        --lang) LANG="$2"; shift 2 ;;
+        --lang) LANGS="$2"; shift 2 ;;
         --desc|--description) DESC="$2"; shift 2 ;;
         --help|-h)
-            echo "Usage: ./setup.sh [--name NAME] [--lang LANG] [--desc DESCRIPTION]"
+            echo "Usage: ./setup.sh [--name NAME] [--lang LANG[,LANG,...]] [--desc DESCRIPTION]"
             echo ""
-            echo "Supported languages: $SUPPORTED_LANGS"
+            echo "Languages with template support: $TEMPLATE_LANGS"
+            echo "Any language is accepted (comma-separated for multiple)."
             echo ""
             echo "If flags are omitted, you will be prompted interactively."
             exit 0
@@ -40,9 +42,10 @@ if [ -z "$NAME" ]; then
     read -rp "Project name: " NAME
 fi
 
-if [ -z "$LANG" ]; then
-    echo "Supported languages: $SUPPORTED_LANGS"
-    read -rp "Language: " LANG
+if [ -z "$LANGS" ]; then
+    echo "Languages with template support: $TEMPLATE_LANGS"
+    echo "Any language is accepted (comma-separated for multiple, e.g. go,python)"
+    read -rp "Language(s): " LANGS
 fi
 
 if [ -z "$DESC" ]; then
@@ -55,25 +58,33 @@ if [ -z "$NAME" ]; then
     exit 1
 fi
 
-VALID=false
-for L in $SUPPORTED_LANGS; do
-    if [ "$LANG" = "$L" ]; then
-        VALID=true
-        break
-    fi
-done
+# Normalize: strip spaces, convert comma-separated to space-separated
+LANGS=$(echo "$LANGS" | tr ',' ' ' | xargs)
 
-if [ "$VALID" = false ]; then
-    echo "ERROR: unsupported language '$LANG'"
-    echo "Supported: $SUPPORTED_LANGS"
+if [ -z "$LANGS" ]; then
+    echo "ERROR: at least one language is required"
     exit 1
 fi
 
+# Note languages without built-in template blocks
+for L in $LANGS; do
+    HAS_TEMPLATE=false
+    for T in $TEMPLATE_LANGS; do
+        if [ "$L" = "$T" ]; then
+            HAS_TEMPLATE=true
+            break
+        fi
+    done
+    if [ "$HAS_TEMPLATE" = false ]; then
+        echo "NOTE: '$L' has no template blocks -- add lint/smoke/init config manually"
+    fi
+done
+
 echo ""
 echo "=== Configuring project ==="
-echo "  Name:     $NAME"
-echo "  Language: $LANG"
-echo "  Desc:     $DESC"
+echo "  Name:      $NAME"
+echo "  Languages: $LANGS"
+echo "  Desc:      $DESC"
 echo ""
 
 # --- Activate language blocks ---
@@ -85,21 +96,26 @@ echo ""
 # For the selected language: uncomment the block (remove "# " prefix).
 # For other languages: delete the block entirely.
 
-activate_lang() {
+activate_langs() {
     local file="$1"
-    local lang="$2"
+    shift
+    local langs="$*"
     local tmpfile
     tmpfile=$(mktemp)
 
-    awk -v lang="$lang" '
-    BEGIN { skip = 0; uncomment = 0; blank = 0 }
+    awk -v langs="$langs" '
+    BEGIN {
+        split(langs, arr, " ")
+        for (i in arr) selected[arr[i]] = 1
+        skip = 0; uncomment = 0; blank = 0
+    }
     {
         # Opening tag: # [langname]
         if ($0 ~ /# \[[a-z]+\]$/ && $0 !~ /\//) {
             tag = $0
             gsub(/.*\[/, "", tag)
             gsub(/\].*/, "", tag)
-            if (tag == lang) {
+            if (tag in selected) {
                 uncomment = 1
             } else {
                 skip = 1
@@ -135,10 +151,10 @@ activate_lang() {
 
 for f in lefthook.yml scripts/smoke.sh scripts/init.sh; do
     if [ -f "$f" ]; then
-        activate_lang "$f" "$LANG"
-        echo "[ok] Activated $LANG blocks in $f"
+        activate_langs "$f" $LANGS
     fi
 done
+echo "[ok] Activated language blocks in template files"
 
 # --- Remove placeholder command and setup comment from lefthook.yml ---
 if [ -f lefthook.yml ]; then
@@ -157,14 +173,25 @@ fi
 
 # --- Update CLAUDE.md ---
 if [ -f CLAUDE.md ]; then
-    case "$LANG" in
-        typescript) LANG_DISPLAY="TypeScript" ;;
-        go) LANG_DISPLAY="Go" ;;
-        python) LANG_DISPLAY="Python" ;;
-        swift) LANG_DISPLAY="Swift" ;;
-        kotlin) LANG_DISPLAY="Kotlin" ;;
-        *) LANG_DISPLAY="$LANG" ;;
-    esac
+    LANG_DISPLAY=""
+    for L in $LANGS; do
+        case "$L" in
+            typescript) D="TypeScript" ;;
+            go) D="Go" ;;
+            python) D="Python" ;;
+            swift) D="Swift" ;;
+            kotlin) D="Kotlin" ;;
+            rust) D="Rust" ;;
+            java) D="Java" ;;
+            ruby) D="Ruby" ;;
+            *) D="$L" ;;
+        esac
+        if [ -z "$LANG_DISPLAY" ]; then
+            LANG_DISPLAY="$D"
+        else
+            LANG_DISPLAY="$LANG_DISPLAY, $D"
+        fi
+    done
 
     # Remove the template guard section (between "## Template Guard" and "---")
     tmpfile=$(mktemp)

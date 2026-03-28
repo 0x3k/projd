@@ -8,19 +8,19 @@ You are wrapping up a work session. Commit, verify, deliver.
 
 ## Context
 
-Current branch: !`git branch --show-current 2>/dev/null || echo "detached"`
+Current branch: !`./scripts/skill-context.sh branch`
 
 Working tree:
-!`git status --short 2>/dev/null || echo "not a git repo"`
+!`./scripts/skill-context.sh git-status`
 
 Changes:
-!`git diff --stat 2>/dev/null`
+!`./scripts/skill-context.sh git-diff-stat`
 
 agent.json:
-!`cat agent.json 2>/dev/null || echo "not found"`
+!`./scripts/skill-context.sh agent-json`
 
 Features:
-!`for f in progress/*.json; do [ -f "$f" ] && jq -c '{id, name, status, priority, blocked_by, branch}' "$f" 2>/dev/null; done || echo "none"`
+!`./scripts/skill-context.sh features`
 
 ## Instructions
 

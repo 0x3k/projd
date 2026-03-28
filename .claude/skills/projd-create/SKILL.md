@@ -13,9 +13,6 @@ BOILERPLATE_LOCAL_PATH: {{BOILERPLATE_LOCAL_PATH}}
 
 ## Context
 
-GitHub CLI status:
-!`gh auth status 2>&1 || echo "gh: not available"`
-
 Current directory:
 !`pwd`
 
@@ -38,10 +35,10 @@ Do not proceed.
 Ask the user for the following. If a project name was provided in `$ARGUMENTS`, use it and skip that prompt.
 
 - **Project name** (required): kebab-case slug (e.g., `my-app`)
-- **Language** (required): one of `typescript`, `go`, `python`, `swift`, `kotlin`
+- **Language** (required): one or more languages, comma-separated (e.g., `go`, `typescript,python`). Common choices with built-in template support: `typescript`, `go`, `python`, `swift`, `kotlin`. Any other language is accepted too. If the user says "you decide" or is unsure, infer the best language(s) from the project description and confirm with them.
 - **One-line description** (required): what the project does
 - **Target path** (default: `./<project-name>` relative to the current directory shown above)
-- **Create GitHub repo?**: Only offer this if the GitHub CLI context above shows an authenticated session. If `gh` is not available or not authenticated, skip silently (note it in output if gh is available but not authenticated, suggesting `gh auth login`). If yes: ask **private or public?** (default: private).
+- **Create GitHub repo?**: Run `gh auth status` to check if the GitHub CLI is available and authenticated. Only offer this option if it shows an authenticated session. If `gh` is not available or not authenticated, skip silently (note it in output if gh is available but not authenticated, suggesting `gh auth login`). If yes: ask **private or public?** (default: private).
 
 Confirm all inputs with the user before proceeding.
 
@@ -86,12 +83,41 @@ cd "<target-path>" && git init
 ### 6. Run setup
 
 ```bash
-cd "<target-path>" && ./setup.sh --name "<name>" --lang "<lang>" --desc "<desc>"
+cd "<target-path>" && ./setup.sh --name "<name>" --lang "<comma-separated-langs>" --desc "<desc>"
 ```
 
-This activates language blocks, updates the project overview in CLAUDE.md (Name, Language, Purpose), removes the example feature, and runs init.sh and validate.sh.
+Pass languages as a comma-separated string (e.g., `--lang "go,python"`). This activates language blocks for languages that have built-in template support, updates the project overview in CLAUDE.md (Name, Language, Purpose), removes the example feature, and runs init.sh and validate.sh.
 
 If setup.sh fails, report the error. Do NOT delete the target directory -- leave it for manual recovery. Stop.
+
+### 6b. Add language support for non-template languages
+
+If any of the chosen languages do NOT have built-in template blocks (i.e., they are not one of `typescript`, `go`, `python`, `swift`, `kotlin`), you must manually add equivalent content to the three template files. Use the existing blocks as a guide for the format and add idiomatic tooling for the language.
+
+**`lefthook.yml`** -- add a pre-commit command block under `pre-commit.commands`. Follow the existing pattern:
+```yaml
+    <tool-name>:
+      glob: "**/*.<ext>"
+      run: <lint/format command> {staged_files}
+```
+Choose the standard linter/formatter for the language (e.g., `cargo clippy` and `cargo fmt --check` for Rust, `rubocop` for Ruby, `checkstyle` for Java).
+
+**`scripts/smoke.sh`** -- add `run_check` lines after the comment `# --- Local checks ---`. Follow the existing pattern:
+```bash
+run_check "<name>" <command>
+```
+Use the same tools chosen for lefthook (e.g., `run_check "clippy" cargo clippy -- -D warnings` for Rust).
+
+**`scripts/init.sh`** -- add dependency installation lines after the comment `# --- Dependencies ---`. Follow the existing pattern:
+```bash
+if [ -f <manifest-file> ]; then
+    <install command>
+    echo "[ok] <Language> dependencies installed"
+fi
+```
+Use the standard dependency file and install command (e.g., `Cargo.toml`/`cargo fetch` for Rust, `Gemfile`/`bundle install` for Ruby).
+
+Skip this step entirely if all chosen languages have built-in template support.
 
 ### 7. Interview user to complete CLAUDE.md
 
