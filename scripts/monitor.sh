@@ -1,40 +1,49 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# monitor.sh -- Live progress monitor for parallel agent sessions.
+# monitor.sh -- Interactive live dashboard for parallel agent sessions.
 #
-# Shows feature status, active worktrees/agents, and PR state.
-# Run from another terminal while /projd-hands-off is dispatching.
+# Navigate features with arrow keys or j/k, act on the selected feature
+# with single-key commands. Auto-refreshes in the background.
 #
 # Usage:
-#   ./scripts/monitor.sh            # interactive dashboard
-#   ./scripts/monitor.sh --watch    # auto-refresh every 5 seconds
-#   ./scripts/monitor.sh --watch 3  # auto-refresh every 3 seconds
+#   ./scripts/monitor.sh            # interactive dashboard (default 5s refresh)
+#   ./scripts/monitor.sh --watch    # same as above (kept for compat)
+#   ./scripts/monitor.sh --watch 3  # custom refresh interval
+#   ./scripts/monitor.sh --once     # print snapshot and exit (non-interactive)
 #
-# Interactive commands:
-#   d  <feature>    Show feature details (JSON, branch log, diff stats)
-#   pr <feature>    Open the feature's PR in the browser
-#   log <feature>   Show recent commits on the feature's branch
-#   reset <feature> Reset feature to pending (clear branch and status)
-#   done <feature>  Mark feature as complete
-#   kill <feature>  Remove the feature's worktree
-#   merge <feature> Merge the feature's PR via gh
-#   r               Refresh the display
-#   q               Quit
+# Navigation:
+#   Up/k      Move selection up
+#   Down/j    Move selection down
+#   d         Feature details (JSON, commits, diff stats)
+#   l         Recent commits on the feature branch
+#   p         Open the feature's PR in browser
+#   r         Reset feature to pending
+#   c         Mark feature complete
+#   x         Remove the feature's worktree
+#   m         Merge the feature's PR
+#   /         Refresh now
+#   q         Quit
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_DIR"
 
-WATCH=false
 INTERVAL=5
+ONCE=false
 
-if [ "${1:-}" = "--watch" ]; then
-    WATCH=true
-    if [ -n "${2:-}" ] && [ "$2" -gt 0 ] 2>/dev/null; then
-        INTERVAL="$2"
-    fi
-fi
+case "${1:-}" in
+    --once)    ONCE=true ;;
+    --watch)
+        if [ -n "${2:-}" ] && [ "$2" -gt 0 ] 2>/dev/null; then
+            INTERVAL="$2"
+        fi
+        ;;
+    --help|-h)
+        sed -n '3,/^$/p' "$0" | sed 's/^# \?//'
+        exit 0
+        ;;
+esac
 
 # --- Colors ---
 R='\033[0m'
@@ -44,37 +53,43 @@ YLW='\033[33m'
 RED='\033[31m'
 CYN='\033[36m'
 BLD='\033[1m'
+INV='\033[7m'
+
+# --- State ---
+SELECTED=0
+FEATURE_IDS=()
+FEATURE_COUNT=0
+OVERLAY=""
+CONFIRM_ACTION=""
+CONFIRM_ID=""
+STATUS_MSG=""
+
+# --- Terminal setup ---
+cleanup() {
+    printf '\033[?25h'   # show cursor
+    printf '\033[?1049l' # restore main screen
+    stty "$ORIG_STTY" 2>/dev/null
+}
+
+if [ "$ONCE" = false ]; then
+    ORIG_STTY=$(stty -g 2>/dev/null || echo "")
+    trap cleanup EXIT INT TERM
+    printf '\033[?1049h'  # alternate screen
+    printf '\033[?25l'    # hide cursor
+fi
 
 # --- Helpers ---
 
-# Get the feature JSON file path for an id.
 feature_file() {
     local id="$1"
-    local f="progress/${id}.json"
-    if [ -f "$f" ]; then
-        echo "$f"
-        return 0
-    fi
-    # Try partial match
-    for candidate in progress/*.json; do
-        [ -f "$candidate" ] || continue
-        local cid
-        cid=$(jq -r '.id // ""' "$candidate" 2>/dev/null)
-        if [[ "$cid" == *"$id"* ]]; then
-            echo "$candidate"
-            return 0
-        fi
-    done
-    return 1
+    echo "progress/${id}.json"
 }
 
-# Get a field from a feature file.
 feature_field() {
     local file="$1" field="$2"
     jq -r ".${field} // empty" "$file" 2>/dev/null
 }
 
-# Find the worktree path for a branch.
 worktree_for_branch() {
     local branch="$1"
     git worktree list --porcelain 2>/dev/null | awk -v b="$branch" '
@@ -83,7 +98,6 @@ worktree_for_branch() {
     '
 }
 
-# Find the PR number for a branch.
 pr_for_branch() {
     local branch="$1"
     if command -v gh &>/dev/null; then
@@ -91,21 +105,37 @@ pr_for_branch() {
     fi
 }
 
-print_status() {
-    if [ "$WATCH" = true ]; then
-        printf '\033[2J\033[H'
+# --- Load features into arrays ---
+load_features() {
+    FEATURE_IDS=()
+    shopt -s nullglob
+    for f in progress/*.json; do
+        [ -f "$f" ] || continue
+        local id
+        id=$(jq -r '.id // ""' "$f" 2>/dev/null)
+        [ -n "$id" ] && FEATURE_IDS+=("$id")
+    done
+    FEATURE_COUNT=${#FEATURE_IDS[@]}
+    if [ "$SELECTED" -ge "$FEATURE_COUNT" ] && [ "$FEATURE_COUNT" -gt 0 ]; then
+        SELECTED=$((FEATURE_COUNT - 1))
     fi
+}
 
-    echo -e "${BLD}projd monitor${R}  ${DIM}$(date '+%H:%M:%S')${R}"
-    echo ""
+# --- Render ---
 
-    # --- Features ---
-    if [ -d progress ] && compgen -G "progress/*.json" >/dev/null 2>&1; then
-        done_n=0; wip_n=0; pending_n=0; total=0
+render() {
+    local lines=""
 
-        for f in progress/*.json; do
-            [ -f "$f" ] || continue
-            total=$((total + 1))
+    # Header
+    lines+="$(printf "${BLD}projd monitor${R}  ${DIM}%s${R}  ${DIM}refresh ${INTERVAL}s${R}" "$(date '+%H:%M:%S')")\n"
+    lines+="\n"
+
+    # Progress summary
+    if [ "$FEATURE_COUNT" -gt 0 ]; then
+        local done_n=0 wip_n=0 pending_n=0
+        for id in "${FEATURE_IDS[@]}"; do
+            local f="progress/${id}.json"
+            local s
             s=$(jq -r '.status // "pending"' "$f" 2>/dev/null)
             case "$s" in
                 complete)    done_n=$((done_n + 1)) ;;
@@ -114,133 +144,174 @@ print_status() {
             esac
         done
 
-        # Progress bar
-        if [ "$total" -gt 0 ]; then
-            filled=$((done_n * 20 / total))
-            empty=$((20 - filled))
-            bar=""
-            for ((i=0; i<filled; i++)); do bar+="█"; done
-            for ((i=0; i<empty; i++)); do bar+="░"; done
-            pct=$((done_n * 100 / total))
-            echo -e "  ${GRN}${bar}${R}  ${BLD}${pct}%%${R}  ${GRN}${done_n}${R} done  ${YLW}${wip_n}${R} wip  ${DIM}${pending_n} pending${R}  ${DIM}(${total} total)${R}"
-        fi
-        echo ""
+        local filled=$((done_n * 20 / FEATURE_COUNT))
+        local empty=$((20 - filled))
+        local bar=""
+        for ((i=0; i<filled; i++)); do bar+="█"; done
+        for ((i=0; i<empty; i++)); do bar+="░"; done
+        local pct=$((done_n * 100 / FEATURE_COUNT))
 
-        # Per-feature table
-        printf "  ${DIM}%-20s  %-12s  %-25s  %s${R}\n" "FEATURE" "STATUS" "BRANCH" "NOTES"
-        printf "  ${DIM}%-20s  %-12s  %-25s  %s${R}\n" "-------" "------" "------" "-----"
+        lines+="$(printf "  ${GRN}%s${R}  ${BLD}%d%%%%${R}  ${GRN}%d${R} done  ${YLW}%d${R} wip  ${DIM}%d pending${R}  ${DIM}(%d total)${R}" "$bar" "$pct" "$done_n" "$wip_n" "$pending_n" "$FEATURE_COUNT")\n"
+        lines+="\n"
 
-        for f in progress/*.json; do
-            [ -f "$f" ] || continue
-            id=$(jq -r '.id // "?"' "$f" 2>/dev/null)
+        # Table header
+        lines+="$(printf "  ${DIM}  %-20s  %-6s  %-25s  %s${R}" "FEATURE" "STATUS" "BRANCH" "INFO")\n"
+
+        # Feature rows
+        local idx=0
+        for id in "${FEATURE_IDS[@]}"; do
+            local f="progress/${id}.json"
+            local status branch notes blocked_by icon info
             status=$(jq -r '.status // "pending"' "$f" 2>/dev/null)
             branch=$(jq -r '.branch // ""' "$f" 2>/dev/null)
             notes=$(jq -r '.notes // ""' "$f" 2>/dev/null)
             blocked_by=$(jq -r '.blocked_by // [] | join(", ")' "$f" 2>/dev/null)
 
             case "$status" in
-                complete)    icon="${GRN}done${R}" ;;
-                in_progress) icon="${YLW}wip ${R}" ;;
+                complete)    icon="${GRN}done ${R}" ;;
+                in_progress) icon="${YLW}wip  ${R}" ;;
                 *)
                     if [ -n "$blocked_by" ]; then
                         icon="${RED}block${R}"
                     else
-                        icon="${DIM}pend${R}"
+                        icon="${DIM}pend ${R}"
                     fi
                     ;;
             esac
 
-            [ ${#id} -gt 20 ] && id="${id:0:17}..."
-            [ ${#branch} -gt 25 ] && branch="${branch:0:22}..."
-            note_text=""
-            if [ -n "$notes" ]; then
-                note_text="$notes"
-                [ ${#note_text} -gt 40 ] && note_text="${note_text:0:37}..."
-            elif [ -n "$blocked_by" ] && [ "$status" != "complete" ]; then
-                note_text="blocked by: $blocked_by"
-            fi
+            local display_id="$id"
+            [ ${#display_id} -gt 20 ] && display_id="${display_id:0:17}..."
+            local display_branch="$branch"
+            [ ${#display_branch} -gt 25 ] && display_branch="${display_branch:0:22}..."
 
-            printf "  %-20s  ${icon}%-6s  %-25s  ${DIM}%s${R}\n" "$id" "" "$branch" "$note_text"
+            info=""
+            if [ -n "$notes" ]; then
+                info="$notes"
+            elif [ -n "$blocked_by" ] && [ "$status" != "complete" ]; then
+                info="blocked: $blocked_by"
+            fi
+            [ ${#info} -gt 35 ] && info="${info:0:32}..."
+
+            local prefix="  "
+            if [ "$idx" -eq "$SELECTED" ]; then
+                lines+="$(printf "${INV}${BLD}> %-20s${R}  ${icon}  ${INV}%-25s${R}  ${DIM}%s${R}" "$display_id" "$display_branch" "$info")\n"
+            else
+                lines+="$(printf "  %-20s  ${icon}  %-25s  ${DIM}%s${R}" "$display_id" "$display_branch" "$info")\n"
+            fi
+            idx=$((idx + 1))
         done
     else
-        echo -e "  ${DIM}No features in progress/${R}"
+        lines+="$(printf "  ${DIM}No features in progress/${R}")\n"
     fi
 
-    # --- Worktrees ---
-    echo ""
+    # Worktrees
+    lines+="\n"
+    local wt_lines
     wt_lines=$(git worktree list 2>/dev/null | tail -n +2 || true)
     if [ -n "$wt_lines" ]; then
+        local wt_count
         wt_count=$(echo "$wt_lines" | wc -l | tr -d ' ')
-        echo -e "  ${BLD}${wt_count} active worktree$([ "$wt_count" -ne 1 ] && echo 's' || echo '')${R}"
-        echo "$wt_lines" | while IFS= read -r line; do
+        lines+="$(printf "  ${BLD}%d active worktree%s${R}" "$wt_count" "$([ "$wt_count" -ne 1 ] && echo 's' || echo '')")\n"
+        while IFS= read -r line; do
+            local wt_path wt_branch
             wt_path=$(echo "$line" | awk '{print $1}')
             wt_branch=$(echo "$line" | grep -o '\[.*\]' | tr -d '[]')
-            echo -e "    ${CYN}${wt_branch}${R}  ${DIM}${wt_path}${R}"
-        done
+            lines+="$(printf "    ${CYN}%-25s${R}  ${DIM}%s${R}" "$wt_branch" "$wt_path")\n"
+        done <<< "$wt_lines"
     else
-        echo -e "  ${DIM}No active worktrees${R}"
+        lines+="$(printf "  ${DIM}No active worktrees${R}")\n"
     fi
 
-    # --- PRs ---
+    # PRs
     if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
-        prefix=$(jq -r '.git.branch_prefix // "agent/"' agent.json 2>/dev/null)
-        prs=$(gh pr list --state open --json number,title,headRefName,url --jq ".[] | select(.headRefName | startswith(\"$prefix\"))" 2>/dev/null || true)
+        local prefix_val
+        prefix_val=$(jq -r '.git.branch_prefix // "agent/"' agent.json 2>/dev/null)
+        local prs
+        prs=$(gh pr list --state open --json number,title,headRefName --jq ".[] | select(.headRefName | startswith(\"$prefix_val\"))" 2>/dev/null || true)
         if [ -n "$prs" ]; then
-            echo ""
+            local pr_count
             pr_count=$(echo "$prs" | jq -s 'length' 2>/dev/null || echo 0)
-            echo -e "  ${BLD}${pr_count} open PR$([ "$pr_count" -ne 1 ] && echo 's' || echo '')${R}"
-            echo "$prs" | jq -r '"    #\(.number)  \(.title)  \(.url)"' 2>/dev/null | while IFS= read -r line; do
-                echo -e "  ${GRN}${line}${R}"
-            done
+            lines+="\n"
+            lines+="$(printf "  ${BLD}%d open PR%s${R}" "$pr_count" "$([ "$pr_count" -ne 1 ] && echo 's' || echo '')")\n"
+            while IFS= read -r pr_line; do
+                lines+="$(printf "  ${GRN}  %s${R}" "$pr_line")\n"
+            done < <(echo "$prs" | jq -r '"#\(.number)  \(.title)"' 2>/dev/null)
         fi
     fi
 
-    echo ""
+    # Footer with key hints
+    lines+="\n"
+    if [ -n "$STATUS_MSG" ]; then
+        lines+="$(printf "  ${GRN}%s${R}" "$STATUS_MSG")\n"
+        lines+="\n"
+    fi
+    if [ -n "$CONFIRM_ACTION" ]; then
+        lines+="$(printf "  ${YLW}%s '%s'? [y/N]${R}" "$CONFIRM_ACTION" "$CONFIRM_ID")\n"
+    else
+        lines+="$(printf "  ${DIM}j/k${R} navigate  ${DIM}d${R} detail  ${DIM}l${R} log  ${DIM}p${R} pr  ${DIM}r${R} reset  ${DIM}c${R} complete  ${DIM}x${R} kill  ${DIM}m${R} merge  ${DIM}q${R} quit")\n"
+    fi
+
+    # Write to screen
+    printf '\033[2J\033[H'
+    printf '%b' "$lines"
 }
 
-# --- Interactive commands ---
+# --- Overlay display (pauses refresh, shows detail, waits for key) ---
 
-cmd_detail() {
+show_overlay() {
+    local content="$1"
+    printf '\033[2J\033[H'
+    printf '%b\n' "$content"
+    printf '\n'
+    printf "  ${DIM}Press any key to return...${R}"
+    stty -echo -icanon min 1 time 0 2>/dev/null
+    read -rsn1 _ 2>/dev/null || true
+}
+
+detail_overlay() {
     local id="$1"
     local f
-    f=$(feature_file "$id") || { echo -e "  ${RED}Feature '$id' not found${R}"; return; }
+    f=$(feature_file "$id")
+    [ ! -f "$f" ] && return
 
-    echo ""
-    echo -e "  ${BLD}Feature: $(feature_field "$f" "id")${R}"
-    echo -e "  ${DIM}$(feature_field "$f" "name")${R}"
-    echo ""
+    local out=""
+    out+="$(printf "${BLD}Feature: %s${R}" "$id")\n"
+    out+="$(printf "${DIM}%s${R}" "$(feature_field "$f" "name")")\n"
+    out+="\n"
 
-    # Full JSON
-    echo -e "  ${DIM}--- feature file ---${R}"
-    jq '.' "$f" 2>/dev/null | sed 's/^/  /'
-    echo ""
+    # JSON
+    out+="$(printf "${DIM}--- feature file ---${R}")\n"
+    out+="$(jq '.' "$f" 2>/dev/null)\n"
+    out+="\n"
 
-    # Acceptance criteria with numbering
+    # Acceptance criteria
     local ac_count
     ac_count=$(jq '.acceptance_criteria | length' "$f" 2>/dev/null || echo 0)
     if [ "$ac_count" -gt 0 ]; then
-        echo -e "  ${BLD}Acceptance criteria:${R}"
-        jq -r '.acceptance_criteria[] // empty' "$f" 2>/dev/null | nl -ba -s '. ' | sed 's/^/    /'
-        echo ""
+        out+="$(printf "${BLD}Acceptance criteria:${R}")\n"
+        while IFS= read -r line; do
+            out+="  $line\n"
+        done < <(jq -r '.acceptance_criteria[] // empty' "$f" 2>/dev/null | nl -ba -s '. ')
+        out+="\n"
     fi
 
     # Branch log
     local branch
     branch=$(feature_field "$f" "branch")
     if [ -n "$branch" ] && git rev-parse --verify "$branch" &>/dev/null; then
-        echo -e "  ${BLD}Recent commits on ${CYN}${branch}${R}:"
-        git log "$branch" --oneline -10 2>/dev/null | sed 's/^/    /'
-        echo ""
+        out+="$(printf "${BLD}Recent commits on ${CYN}%s${R}:" "$branch")\n"
+        while IFS= read -r line; do
+            out+="  $line\n"
+        done < <(git log "$branch" --oneline -10 2>/dev/null)
+        out+="\n"
 
-        # Diff stats vs main
-        local base
-        base=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-        if git rev-parse --verify "main" &>/dev/null; then
-            base="main"
-        fi
-        echo -e "  ${BLD}Diff vs ${base}:${R}"
-        git diff --stat "${base}...${branch}" 2>/dev/null | sed 's/^/    /'
-        echo ""
+        local base="main"
+        git rev-parse --verify main &>/dev/null || base=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+        out+="$(printf "${BLD}Diff vs %s:${R}" "$base")\n"
+        while IFS= read -r line; do
+            out+="  $line\n"
+        done < <(git diff --stat "${base}...${branch}" 2>/dev/null)
+        out+="\n"
     fi
 
     # Worktree
@@ -248,7 +319,7 @@ cmd_detail() {
         local wt
         wt=$(worktree_for_branch "$branch")
         if [ -n "$wt" ]; then
-            echo -e "  ${BLD}Worktree:${R} ${DIM}${wt}${R}"
+            out+="$(printf "${BLD}Worktree:${R} ${DIM}%s${R}" "$wt")\n"
         fi
     fi
 
@@ -257,253 +328,328 @@ cmd_detail() {
         local pr_num
         pr_num=$(pr_for_branch "$branch")
         if [ -n "$pr_num" ]; then
-            echo -e "  ${BLD}PR:${R} ${GRN}#${pr_num}${R}"
-            gh pr view "$pr_num" --json title,state,additions,deletions,reviewDecision,url \
-                --jq '"    \(.url)\n    +\(.additions) -\(.deletions)  \(.state)  review: \(.reviewDecision // "none")"' 2>/dev/null
+            out+="$(printf "${BLD}PR:${R} ${GRN}#%s${R}" "$pr_num")\n"
+            out+="$(gh pr view "$pr_num" --json title,state,additions,deletions,reviewDecision,url \
+                --jq '"  \(.url)\n  +\(.additions) -\(.deletions)  \(.state)  review: \(.reviewDecision // "none")"' 2>/dev/null || true)\n"
         fi
     fi
-    echo ""
+
+    show_overlay "$out"
 }
 
-cmd_log() {
+log_overlay() {
     local id="$1"
     local f
-    f=$(feature_file "$id") || { echo -e "  ${RED}Feature '$id' not found${R}"; return; }
+    f=$(feature_file "$id")
+    [ ! -f "$f" ] && return
+
     local branch
     branch=$(feature_field "$f" "branch")
     if [ -z "$branch" ] || ! git rev-parse --verify "$branch" &>/dev/null; then
-        echo -e "  ${DIM}No branch for this feature${R}"
+        show_overlay "$(printf "${DIM}No branch for %s${R}" "$id")"
         return
     fi
-    echo ""
-    echo -e "  ${BLD}Commits on ${CYN}${branch}${R}:"
-    git log "$branch" --oneline -20 2>/dev/null | sed 's/^/    /'
-    echo ""
+
+    local out=""
+    out+="$(printf "${BLD}Commits on ${CYN}%s${R}:" "$branch")\n\n"
+    while IFS= read -r line; do
+        out+="  $line\n"
+    done < <(git log "$branch" --oneline -25 2>/dev/null)
+
+    show_overlay "$out"
 }
 
-cmd_pr_open() {
-    local id="$1"
-    local f
-    f=$(feature_file "$id") || { echo -e "  ${RED}Feature '$id' not found${R}"; return; }
-    local branch
-    branch=$(feature_field "$f" "branch")
-    if [ -z "$branch" ]; then
-        echo -e "  ${DIM}No branch for this feature${R}"
-        return
+# --- Actions ---
+
+selected_id() {
+    if [ "$FEATURE_COUNT" -gt 0 ] && [ "$SELECTED" -lt "$FEATURE_COUNT" ]; then
+        echo "${FEATURE_IDS[$SELECTED]}"
     fi
-    if ! command -v gh &>/dev/null; then
-        echo -e "  ${RED}gh CLI not available${R}"
-        return
-    fi
-    local pr_num
-    pr_num=$(pr_for_branch "$branch")
-    if [ -z "$pr_num" ]; then
-        echo -e "  ${DIM}No open PR for branch ${branch}${R}"
-        return
-    fi
-    echo -e "  Opening PR #${pr_num}..."
-    gh pr view "$pr_num" --web 2>/dev/null
 }
 
-cmd_reset() {
+action_reset() {
     local id="$1"
     local f
-    f=$(feature_file "$id") || { echo -e "  ${RED}Feature '$id' not found${R}"; return; }
-    local current_status
-    current_status=$(feature_field "$f" "status")
+    f=$(feature_file "$id")
+    [ ! -f "$f" ] && return
 
-    echo -e "  ${YLW}Reset '${id}' from '${current_status}' to 'pending'?${R} [y/N] "
-    read -r confirm
-    if [[ "$confirm" != [yY] ]]; then
-        echo -e "  ${DIM}Cancelled${R}"
-        return
-    fi
-
-    # Clean up worktree if one exists
     local branch
     branch=$(feature_field "$f" "branch")
     if [ -n "$branch" ]; then
         local wt
         wt=$(worktree_for_branch "$branch")
         if [ -n "$wt" ]; then
-            echo -e "  Removing worktree at ${wt}..."
             git worktree remove --force "$wt" 2>/dev/null || true
         fi
     fi
 
-    # Update feature file
     local tmp
     tmp=$(mktemp)
     jq '.status = "pending" | .branch = "" | .notes = ""' "$f" > "$tmp" && mv "$tmp" "$f"
-    echo -e "  ${GRN}Feature '${id}' reset to pending${R}"
+    STATUS_MSG="Reset '$id' to pending"
 }
 
-cmd_done() {
+action_complete() {
     local id="$1"
     local f
-    f=$(feature_file "$id") || { echo -e "  ${RED}Feature '$id' not found${R}"; return; }
-
-    echo -e "  ${YLW}Mark '${id}' as complete?${R} [y/N] "
-    read -r confirm
-    if [[ "$confirm" != [yY] ]]; then
-        echo -e "  ${DIM}Cancelled${R}"
-        return
-    fi
+    f=$(feature_file "$id")
+    [ ! -f "$f" ] && return
 
     local tmp
     tmp=$(mktemp)
     jq '.status = "complete"' "$f" > "$tmp" && mv "$tmp" "$f"
-    echo -e "  ${GRN}Feature '${id}' marked complete${R}"
+    STATUS_MSG="Marked '$id' complete"
 }
 
-cmd_kill() {
+action_kill() {
     local id="$1"
     local f
-    f=$(feature_file "$id") || { echo -e "  ${RED}Feature '$id' not found${R}"; return; }
+    f=$(feature_file "$id")
+    [ ! -f "$f" ] && return
+
     local branch
     branch=$(feature_field "$f" "branch")
-    if [ -z "$branch" ]; then
-        echo -e "  ${DIM}No branch for this feature${R}"
-        return
-    fi
+    [ -z "$branch" ] && { STATUS_MSG="No branch for '$id'"; return; }
+
     local wt
     wt=$(worktree_for_branch "$branch")
-    if [ -z "$wt" ]; then
-        echo -e "  ${DIM}No active worktree for branch ${branch}${R}"
-        return
-    fi
-
-    echo -e "  ${RED}Remove worktree at ${wt}?${R} [y/N] "
-    read -r confirm
-    if [[ "$confirm" != [yY] ]]; then
-        echo -e "  ${DIM}Cancelled${R}"
-        return
-    fi
+    [ -z "$wt" ] && { STATUS_MSG="No worktree for '$id'"; return; }
 
     git worktree remove --force "$wt" 2>/dev/null && \
-        echo -e "  ${GRN}Worktree removed${R}" || \
-        echo -e "  ${RED}Failed to remove worktree${R}"
+        STATUS_MSG="Removed worktree for '$id'" || \
+        STATUS_MSG="Failed to remove worktree"
 }
 
-cmd_merge() {
+action_pr_open() {
     local id="$1"
     local f
-    f=$(feature_file "$id") || { echo -e "  ${RED}Feature '$id' not found${R}"; return; }
+    f=$(feature_file "$id")
+    [ ! -f "$f" ] && return
+
     local branch
     branch=$(feature_field "$f" "branch")
-    if [ -z "$branch" ]; then
-        echo -e "  ${DIM}No branch for this feature${R}"
-        return
-    fi
-    if ! command -v gh &>/dev/null; then
-        echo -e "  ${RED}gh CLI not available${R}"
-        return
-    fi
+    [ -z "$branch" ] && { STATUS_MSG="No branch for '$id'"; return; }
+
+    command -v gh &>/dev/null || { STATUS_MSG="gh CLI not available"; return; }
+
     local pr_num
     pr_num=$(pr_for_branch "$branch")
-    if [ -z "$pr_num" ]; then
-        echo -e "  ${DIM}No open PR for branch ${branch}${R}"
-        return
-    fi
+    [ -z "$pr_num" ] && { STATUS_MSG="No open PR for '$id'"; return; }
 
-    echo -e "  ${YLW}Merge PR #${pr_num} for '${id}'?${R} [y/N] "
-    read -r confirm
-    if [[ "$confirm" != [yY] ]]; then
-        echo -e "  ${DIM}Cancelled${R}"
-        return
-    fi
-
-    gh pr merge "$pr_num" --merge 2>/dev/null && \
-        echo -e "  ${GRN}PR #${pr_num} merged${R}" || \
-        echo -e "  ${RED}Failed to merge PR #${pr_num}${R}"
-
-    # Mark feature complete after merge
-    local tmp
-    tmp=$(mktemp)
-    jq '.status = "complete"' "$f" > "$tmp" && mv "$tmp" "$f"
-    echo -e "  ${GRN}Feature '${id}' marked complete${R}"
+    gh pr view "$pr_num" --web 2>/dev/null
+    STATUS_MSG="Opened PR #${pr_num}"
 }
 
-print_help() {
-    echo ""
-    echo -e "  ${BLD}Commands:${R}"
-    echo -e "    ${CYN}d${R}  <feature>     Feature details (JSON, commits, diff stats, PR)"
-    echo -e "    ${CYN}log${R} <feature>    Recent commits on the feature branch"
-    echo -e "    ${CYN}pr${R} <feature>     Open the feature's PR in the browser"
-    echo -e "    ${CYN}reset${R} <feature>  Reset feature to pending (clears branch and worktree)"
-    echo -e "    ${CYN}done${R} <feature>   Mark feature as complete"
-    echo -e "    ${CYN}kill${R} <feature>   Remove the feature's worktree"
-    echo -e "    ${CYN}merge${R} <feature>  Merge the feature's PR and mark complete"
-    echo -e "    ${CYN}r${R}               Refresh the display"
-    echo -e "    ${CYN}q${R}               Quit"
-    echo ""
+action_merge() {
+    local id="$1"
+    local f
+    f=$(feature_file "$id")
+    [ ! -f "$f" ] && return
+
+    local branch
+    branch=$(feature_field "$f" "branch")
+    [ -z "$branch" ] && { STATUS_MSG="No branch for '$id'"; return; }
+
+    command -v gh &>/dev/null || { STATUS_MSG="gh CLI not available"; return; }
+
+    local pr_num
+    pr_num=$(pr_for_branch "$branch")
+    [ -z "$pr_num" ] && { STATUS_MSG="No open PR for '$id'"; return; }
+
+    if gh pr merge "$pr_num" --merge 2>/dev/null; then
+        local tmp
+        tmp=$(mktemp)
+        jq '.status = "complete"' "$f" > "$tmp" && mv "$tmp" "$f"
+        STATUS_MSG="Merged PR #${pr_num}, marked '$id' complete"
+    else
+        STATUS_MSG="Failed to merge PR #${pr_num}"
+    fi
 }
 
-# --- Main ---
+# --- Non-interactive mode ---
 
-if [ "$WATCH" = true ]; then
-    trap 'printf "\033[?25h\033[?7h"; stty echo 2>/dev/null; exit 0' INT TERM
-    printf '\033[?25l'  # hide cursor
+if [ "$ONCE" = true ]; then
+    load_features
+    # Simple non-interactive output (no alternate screen, no key reading)
+    SELECTED=-1  # no selection highlight
 
-    while true; do
-        print_status
+    printf "${BLD}projd monitor${R}  ${DIM}%s${R}\n\n" "$(date '+%H:%M:%S')"
 
-        # Show key hints
-        echo -e "  ${DIM}d <id>${R} detail  ${DIM}pr <id>${R} open PR  ${DIM}merge <id>${R}  ${DIM}reset <id>${R}  ${DIM}q${R} quit"
-        echo -e "  ${DIM}Refreshing in ${INTERVAL}s. Type a command or wait...${R}"
+    if [ "$FEATURE_COUNT" -gt 0 ]; then
+        local done_n=0 wip_n=0 pending_n=0
+        for id in "${FEATURE_IDS[@]}"; do
+            local s
+            s=$(jq -r '.status // "pending"' "progress/${id}.json" 2>/dev/null)
+            case "$s" in
+                complete)    done_n=$((done_n + 1)) ;;
+                in_progress) wip_n=$((wip_n + 1)) ;;
+                *)           pending_n=$((pending_n + 1)) ;;
+            esac
+        done
 
-        # Wait for input with timeout -- if the user types something, handle it
-        # instead of auto-refreshing
-        cmd="" arg=""
-        if read -r -t "$INTERVAL" cmd arg rest 2>/dev/null; then
-            case "${cmd:-}" in
-                q|quit|exit)
-                    printf '\033[?25h'
-                    exit 0
-                    ;;
-                r|refresh)   ;; # just loop and refresh
-                d|detail)    printf '\033[?25h'; cmd_detail "${arg:-}"; printf '\033[?25l'
-                             echo -e "  ${DIM}Press Enter to continue...${R}"; read -r ;;
-                log)         printf '\033[?25h'; cmd_log "${arg:-}"; printf '\033[?25l'
-                             echo -e "  ${DIM}Press Enter to continue...${R}"; read -r ;;
-                pr)          cmd_pr_open "${arg:-}"
-                             echo -e "  ${DIM}Press Enter to continue...${R}"; read -r ;;
-                reset)       printf '\033[?25h'; cmd_reset "${arg:-}"; printf '\033[?25l'
-                             echo -e "  ${DIM}Press Enter to continue...${R}"; read -r ;;
-                done)        printf '\033[?25h'; cmd_done "${arg:-}"; printf '\033[?25l'
-                             echo -e "  ${DIM}Press Enter to continue...${R}"; read -r ;;
-                kill)        printf '\033[?25h'; cmd_kill "${arg:-}"; printf '\033[?25l'
-                             echo -e "  ${DIM}Press Enter to continue...${R}"; read -r ;;
-                merge)       printf '\033[?25h'; cmd_merge "${arg:-}"; printf '\033[?25l'
-                             echo -e "  ${DIM}Press Enter to continue...${R}"; read -r ;;
-                "")          ;; # Enter just refreshes
-                *)           echo -e "  ${DIM}Unknown command '${cmd}'${R}"
-                             sleep 1 ;;
+        local filled=$((done_n * 20 / FEATURE_COUNT))
+        local empty_b=$((20 - filled))
+        local bar=""
+        for ((i=0; i<filled; i++)); do bar+="█"; done
+        for ((i=0; i<empty_b; i++)); do bar+="░"; done
+        local pct=$((done_n * 100 / FEATURE_COUNT))
+        printf "  ${GRN}%s${R}  ${BLD}%d%%%%${R}  ${GRN}%d${R} done  ${YLW}%d${R} wip  ${DIM}%d pending${R}  ${DIM}(%d total)${R}\n\n" \
+            "$bar" "$pct" "$done_n" "$wip_n" "$pending_n" "$FEATURE_COUNT"
+
+        printf "  ${DIM}%-20s  %-6s  %-25s  %s${R}\n" "FEATURE" "STATUS" "BRANCH" "INFO"
+        for id in "${FEATURE_IDS[@]}"; do
+            local f="progress/${id}.json"
+            local status branch icon
+            status=$(jq -r '.status // "pending"' "$f" 2>/dev/null)
+            branch=$(jq -r '.branch // ""' "$f" 2>/dev/null)
+            case "$status" in
+                complete)    icon="done " ;;
+                in_progress) icon="wip  " ;;
+                *)           icon="pend " ;;
+            esac
+            printf "  %-20s  %-6s  %s\n" "$id" "$icon" "$branch"
+        done
+    else
+        printf "  ${DIM}No features in progress/${R}\n"
+    fi
+    echo ""
+    exit 0
+fi
+
+# --- Main loop ---
+
+stty -echo -icanon min 0 time 0 2>/dev/null
+
+load_features
+render
+
+LAST_REFRESH=$(date +%s)
+
+while true; do
+    # Read a key (non-blocking)
+    KEY=""
+    read -rsn1 -t 0.1 KEY 2>/dev/null || true
+
+    # Handle escape sequences (arrow keys)
+    if [ "$KEY" = $'\033' ]; then
+        read -rsn1 -t 0.05 SEQ1 2>/dev/null || true
+        read -rsn1 -t 0.05 SEQ2 2>/dev/null || true
+        if [ "$SEQ1" = "[" ]; then
+            case "$SEQ2" in
+                A) KEY="UP" ;;
+                B) KEY="DOWN" ;;
+                *) KEY="" ;;
             esac
         fi
-        # Auto-refresh on timeout or after command
-    done
-else
-    print_status
-    print_help
+    fi
 
-    while true; do
-        echo -ne "${DIM}>${R} "
-        read -r cmd arg rest || break
+    NEEDS_RENDER=false
 
-        case "${cmd:-}" in
-            q|quit|exit) break ;;
-            r|refresh)   print_status; print_help ;;
-            d|detail)    cmd_detail "${arg:-}" ;;
-            log)         cmd_log "${arg:-}" ;;
-            pr)          cmd_pr_open "${arg:-}" ;;
-            reset)       cmd_reset "${arg:-}" ;;
-            done)        cmd_done "${arg:-}" ;;
-            kill)        cmd_kill "${arg:-}" ;;
-            merge)       cmd_merge "${arg:-}" ;;
-            h|help|"?")  print_help ;;
-            "")          ;; # empty input, just re-prompt
-            *)           echo -e "  ${DIM}Unknown command '${cmd}'. Type h for help.${R}" ;;
+    # Handle confirmation mode
+    if [ -n "$CONFIRM_ACTION" ]; then
+        case "$KEY" in
+            y|Y)
+                case "$CONFIRM_ACTION" in
+                    "Reset")    action_reset "$CONFIRM_ID" ;;
+                    "Complete") action_complete "$CONFIRM_ID" ;;
+                    "Kill worktree for") action_kill "$CONFIRM_ID" ;;
+                    "Merge PR for")     action_merge "$CONFIRM_ID" ;;
+                esac
+                CONFIRM_ACTION=""
+                CONFIRM_ID=""
+                load_features
+                NEEDS_RENDER=true
+                ;;
+            n|N|"")
+                if [ -n "$KEY" ]; then
+                    CONFIRM_ACTION=""
+                    CONFIRM_ID=""
+                    STATUS_MSG="Cancelled"
+                    NEEDS_RENDER=true
+                fi
+                ;;
+            *)
+                CONFIRM_ACTION=""
+                CONFIRM_ID=""
+                STATUS_MSG="Cancelled"
+                NEEDS_RENDER=true
+                ;;
         esac
-    done
-fi
+    elif [ -n "$KEY" ]; then
+        STATUS_MSG=""
+        local id
+        id=$(selected_id)
+
+        case "$KEY" in
+            q) break ;;
+            k|UP)
+                if [ "$SELECTED" -gt 0 ]; then
+                    SELECTED=$((SELECTED - 1))
+                    NEEDS_RENDER=true
+                fi
+                ;;
+            j|DOWN)
+                if [ "$SELECTED" -lt $((FEATURE_COUNT - 1)) ]; then
+                    SELECTED=$((SELECTED + 1))
+                    NEEDS_RENDER=true
+                fi
+                ;;
+            d)
+                [ -n "$id" ] && detail_overlay "$id"
+                NEEDS_RENDER=true
+                ;;
+            l)
+                [ -n "$id" ] && log_overlay "$id"
+                NEEDS_RENDER=true
+                ;;
+            p)
+                [ -n "$id" ] && action_pr_open "$id"
+                NEEDS_RENDER=true
+                ;;
+            r)
+                if [ -n "$id" ]; then
+                    CONFIRM_ACTION="Reset"
+                    CONFIRM_ID="$id"
+                    NEEDS_RENDER=true
+                fi
+                ;;
+            c)
+                if [ -n "$id" ]; then
+                    CONFIRM_ACTION="Complete"
+                    CONFIRM_ID="$id"
+                    NEEDS_RENDER=true
+                fi
+                ;;
+            x)
+                if [ -n "$id" ]; then
+                    CONFIRM_ACTION="Kill worktree for"
+                    CONFIRM_ID="$id"
+                    NEEDS_RENDER=true
+                fi
+                ;;
+            m)
+                if [ -n "$id" ]; then
+                    CONFIRM_ACTION="Merge PR for"
+                    CONFIRM_ID="$id"
+                    NEEDS_RENDER=true
+                fi
+                ;;
+            /)
+                load_features
+                NEEDS_RENDER=true
+                ;;
+        esac
+    fi
+
+    # Auto-refresh on interval
+    NOW=$(date +%s)
+    if [ $((NOW - LAST_REFRESH)) -ge "$INTERVAL" ]; then
+        load_features
+        LAST_REFRESH=$NOW
+        NEEDS_RENDER=true
+    fi
+
+    if [ "$NEEDS_RENDER" = true ]; then
+        render
+    fi
+done
