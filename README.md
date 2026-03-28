@@ -1,10 +1,45 @@
 # projd
 
-**Project Daemon** (`projd`, pronounced "prodigy" `/ˈprɒdɪdʒi/` by some -- we don't correct them).
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Built for Claude Code](https://img.shields.io/badge/Built_for-Claude_Code-6B5CE7)](https://claude.ai/code)
 
-A project template with built-in patterns for effective long-running AI agent sessions. You describe what you want, projd breaks it into features, and Claude builds them -- one at a time or several in parallel. You review PRs. That's the whole deal.
+**Project Daemon** -- pronounced "prodigy" `/ˈprɒdɪdʒi/` by some. We don't correct them.
+
+> A project harness for long-running and parallel AI agent sessions. You describe what you want, projd breaks it into features, and Claude builds them -- one at a time or several in parallel. You review PRs. That's the whole deal.
 
 Based on patterns from [Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents) and production-tested conventions.
+
+---
+
+### Quick Start
+
+```bash
+./scripts/install-skill.sh   # install the scaffolding skill (one-time)
+```
+```
+/projd-create                 # scaffold a new project from any Claude Code session
+/projd-plan "your idea"       # break it into features
+/projd-hands-on               # build one feature at a time
+/projd-hands-off              # or launch parallel agents
+```
+
+---
+
+## Table of Contents
+
+- [Why](#why)
+- [Prerequisites](#prerequisites)
+- [Workflow: New Project](#workflow-new-project)
+- [Workflow: Adding Features](#workflow-adding-features-to-an-existing-project)
+- [What's Included](#whats-included)
+- [Setup](#setup)
+- [Skills](#skills-projd)
+- [Feature Schema](#feature-schema)
+- [Agent Controls](#agent-controls)
+- [Running Sessions](#running-sessions)
+- [Multi-Project Workspaces](#multi-project-workspaces)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Why
 
@@ -326,11 +361,20 @@ For a new project or large initiative:
 
 For monorepos and multi-service setups, see [docs/multi-project.md](docs/multi-project.md).
 
+## Contributing
+
+Contributions are welcome. Open an issue to discuss what you'd like to change before submitting a PR.
+
+If you're adding a new skill or changing the workflow, test it end-to-end on a real project first -- projd is opinionated by design, and changes should hold up under actual agent sessions.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
 
-## File Reference
+---
+
+<details>
+<summary><strong>File Reference</strong></summary>
 
 ```
 my-project/
@@ -362,3 +406,5 @@ my-project/
   .gitignore               # Standard ignores + HANDOFF.md
   HANDOFF.md               # (created at runtime, gitignored) Session continuity
 ```
+
+</details>
