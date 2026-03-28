@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./scripts/skill-context.sh:*)"
+      "Bash(./scripts/skill-context.sh:*)",
+      "Bash(git *)",
+      "Bash(cd * && git *)"
     ]
   },
   "hooks": {
