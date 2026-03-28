@@ -309,6 +309,12 @@ Three layers:
 2. **Instruction-based**: `CLAUDE.md` tells the agent to read and follow `agent.json`. The agent complies because it follows its instructions.
 3. **Lefthook**: The pre-push hook in `lefthook.yml` provides a secondary guard for git usage outside Claude Code.
 
+### Git command auto-approval
+
+By default, `.claude/settings.json` includes permission rules that auto-approve git commands (`Bash(git *)` and `Bash(cd * && git *)`). This prevents the agent from prompting you on every git operation during the workflow. The policy hook still enforces `agent.json` rules regardless of auto-approval.
+
+If you prefer to review each git command before it runs, remove those entries from the `permissions.allow` array in `.claude/settings.json`.
+
 ## Running Sessions
 
 ### Single agent
