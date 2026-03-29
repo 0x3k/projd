@@ -845,7 +845,34 @@ section {
   color: var(--green);
   word-break: break-all;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
+
+.quickstart-code code { flex: 1; }
+
+.copy-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: var(--dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.copy-btn:hover { color: var(--text); border-color: var(--dim); }
+
+.copy-btn .check-icon { display: none; }
+
+.copy-btn.copied { color: var(--green); border-color: var(--green); }
+.copy-btn.copied .copy-icon { display: none; }
+.copy-btn.copied .check-icon { display: block; }
 
 .quickstart-note {
   margin-top: 10px;

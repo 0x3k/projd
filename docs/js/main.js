@@ -36,4 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }, { threshold: 0.2 });
 
   document.querySelectorAll('.workflow-steps').forEach(el => stepObserver.observe(el));
+
+  // Copy-to-clipboard buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const text = btn.dataset.copy;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.classList.add('copied');
+        setTimeout(() => btn.classList.remove('copied'), 2000);
+      });
+    });
+  });
 });
