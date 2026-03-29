@@ -23,11 +23,22 @@ Supported languages with built-in template blocks: `typescript`, `go`, `python`,
 
 ## Scaffolding skill (recommended for repeat use)
 
-Install the projd skills once, then create or adopt projects from any Claude Code session:
+Install the projd skills once, then create or adopt projects from any Claude Code session.
+
+**One-line install** (from anywhere):
 
 ```bash
-./scripts/install-skill.sh   # from the template repo (one-time)
+bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/scripts/remote-install.sh)
 ```
+
+Or from a local clone:
+
+```bash
+./scripts/install-skill.sh
+```
+
+This installs `/projd-create`, `/projd-adopt`, and an auto-updater to `~/.claude/skills/`. Skills check for updates once per day when invoked -- no manual upgrades needed.
+
 ```
 /projd-create                 # scaffold a new project
 /projd-adopt                  # add projd to an existing project

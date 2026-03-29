@@ -1,0 +1,105 @@
+/* -- Terminal window chrome -- */
+
+.terminal {
+  background: #0a0e14;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(22, 27, 34, 0.8);
+  border-bottom: 1px solid var(--border);
+}
+
+.terminal-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.terminal-dot.red { background: #ff5f57; }
+.terminal-dot.yellow { background: #febc2e; }
+.terminal-dot.green { background: #28c840; }
+
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--dim);
+}
+
+.terminal-body {
+  padding: 16px 20px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.7;
+  min-height: 80px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.terminal-body pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Prompt styling */
+.term-prompt { color: var(--green); }
+.term-command { color: var(--text); }
+.term-output { color: var(--dim); }
+.term-highlight { color: var(--cyan); }
+.term-success { color: var(--green); }
+.term-warn { color: var(--yellow); }
+.term-skill { color: var(--purple); }
+
+/* Cursor blink */
+.term-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  background: var(--text);
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* Terminal in hero is wider */
+.hero .terminal {
+  max-width: 720px;
+  text-align: left;
+}
+
+.hero .terminal-body {
+  min-height: 340px;
+}
+
+/* Small terminal for inline examples */
+.terminal-sm {
+  margin: 0;
+  text-align: left;
+}
+
+.terminal-sm .terminal-body {
+  font-size: 0.75rem;
+  padding: 12px 16px;
+  min-height: 220px;
+  max-height: 300px;
+}

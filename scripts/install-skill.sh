@@ -3,7 +3,8 @@ set -euo pipefail
 
 # install-skill.sh -- Install, check, or remove projd user-level skills.
 #
-# Installs both /projd-create and /projd-adopt to ~/.claude/skills/.
+# Installs both /projd-create and /projd-adopt to ~/.claude/skills/,
+# plus an auto-updater that checks for new versions once per day.
 #
 # Usage:
 #   ./scripts/install-skill.sh           Install or update all skills
@@ -108,3 +109,108 @@ for SKILL in "${SKILLS[@]}"; do
     echo "$CONTENT" > "$TARGET"
     echo "  Installed /$SKILL to $TARGET"
 done
+
+# --- Auto-updater ---
+UPDATER="$HOME/.claude/skills/.projd-updater.sh"
+UPDATER_CACHE="$HOME/.claude/skills/.projd-cache"
+
+build_updater_body() {
+    local body
+    body=$(cat << 'UPDATER_EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+# projd auto-updater -- checks for skill updates at most once per day.
+# Installed by install-skill.sh. Called from skill context commands.
+
+REMOTE="__PROJD_REMOTE__"
+LOCAL="__PROJD_LOCAL__"
+DIR="$HOME/.claude/skills"
+CACHE="$DIR/.projd-cache"
+STAMP="$CACHE/last-check"
+
+# Rate limit: at most once per 24 hours
+NOW=$(date +%s)
+if [ -f "$STAMP" ]; then
+    LAST=$(cat "$STAMP")
+    [ $((NOW - LAST)) -lt 86400 ] && exit 0
+fi
+
+# Fetch latest template
+T=$(mktemp -d)
+trap 'rm -rf "$T"' EXIT
+if ! git clone --depth 1 "$REMOTE" "$T" 2>/dev/null; then
+    if [ -n "$LOCAL" ] && [ -d "$LOCAL" ]; then
+        git clone --depth 1 "$LOCAL" "$T" 2>/dev/null || exit 0
+    else
+        exit 0
+    fi
+fi
+
+mkdir -p "$CACHE"
+echo "$NOW" > "$STAMP"
+
+# Compare and update each skill
+UPDATED=""
+for S in projd-create projd-adopt; do
+    SRC="$T/.claude/skills/$S/SKILL.md"
+    DST="$DIR/$S/SKILL.md"
+    [ ! -f "$SRC" ] && continue
+    [ ! -f "$DST" ] && continue
+    NEW=$(sed "s|{{BOILERPLATE_REMOTE_URL}}|$REMOTE|g" "$SRC" | sed "s|{{BOILERPLATE_LOCAL_PATH}}|$LOCAL|g")
+    if ! diff -q <(echo "$NEW") "$DST" >/dev/null 2>&1; then
+        echo "$NEW" > "$DST"
+        UPDATED="$UPDATED $S"
+    fi
+done
+
+[ -n "$UPDATED" ] && echo "PROJD_UPDATED:$UPDATED updated to latest version. Re-run the command."
+UPDATER_EOF
+)
+    body="${body//__PROJD_REMOTE__/$REMOTE_URL}"
+    body="${body//__PROJD_LOCAL__/$PROJECT_DIR}"
+    echo "$body"
+}
+
+if [ "$MODE" = "remove" ]; then
+    echo "--- updater ---"
+    if [ -f "$UPDATER" ]; then
+        rm "$UPDATER"
+        rm -rf "$UPDATER_CACHE" 2>/dev/null || true
+        echo "  Removed $UPDATER"
+    else
+        echo "  Not installed. Nothing to remove."
+    fi
+elif [ "$MODE" = "install" ]; then
+    UPDATER_BODY="$(build_updater_body)"
+
+    echo "--- updater ---"
+    if [ -f "$UPDATER" ]; then
+        DIFF="$(diff "$UPDATER" <(echo "$UPDATER_BODY") || true)"
+        if [ -z "$DIFF" ]; then
+            echo "  Already up to date. No changes."
+        else
+            echo "$UPDATER_BODY" > "$UPDATER"
+            chmod +x "$UPDATER"
+            echo "  Updated $UPDATER"
+        fi
+    else
+        echo "$UPDATER_BODY" > "$UPDATER"
+        chmod +x "$UPDATER"
+        echo "  Installed to $UPDATER"
+    fi
+elif [ "$MODE" = "check" ]; then
+    echo "--- updater ---"
+    if [ ! -f "$UPDATER" ]; then
+        echo "  Not installed."
+    else
+        UPDATER_BODY="$(build_updater_body)"
+        DIFF="$(diff "$UPDATER" <(echo "$UPDATER_BODY") || true)"
+        if [ -z "$DIFF" ]; then
+            echo "  Already up to date."
+        else
+            echo "  Changes between installed and current:"
+            echo ""
+            echo "$DIFF"
+        fi
+    fi
+fi
