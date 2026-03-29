@@ -8,6 +8,7 @@ set -euo pipefail
 # Idempotent -- safe to re-run.
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
+cd "$PROJECT_DIR"
 
 echo "=== Initializing project ==="
 

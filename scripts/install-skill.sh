@@ -12,6 +12,7 @@ set -euo pipefail
 #   ./scripts/install-skill.sh --remove  Remove all installed skills
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
+cd "$PROJECT_DIR"
 
 SKILLS=("projd-create" "projd-adopt")
 

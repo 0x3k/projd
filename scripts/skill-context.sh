@@ -20,6 +20,7 @@ set -euo pipefail
 #   ./scripts/skill-context.sh gh-auth
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
+cd "$PROJECT_DIR"
 
 cmd="${1:-help}"
 

@@ -6,9 +6,7 @@
 _PROJD_LIB_LOADED=1
 
 # --- Bootstrap ---
-LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-PROJECT_DIR="$(cd "$LIB_DIR/.." && pwd)"
-cd "$PROJECT_DIR"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
 
 # --- Colors ---
 R='\033[0m'

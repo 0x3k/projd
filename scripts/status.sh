@@ -11,6 +11,7 @@ set -euo pipefail
 #   ./status.sh --local  # skip sub-projects, show only this directory
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
+cd "$PROJECT_DIR"
 
 LOCAL_ONLY=false
 if [ "${1:-}" = "--local" ]; then

@@ -73,7 +73,7 @@ if git rev-parse --is-inside-work-tree &>/dev/null; then
 fi
 
 # --- Colors (from lib.sh if available, inline fallback for resilience) ---
-_lib="${CLAUDE_PROJECT_DIR:-.}/scripts/lib.sh"
+_lib="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 if [ -f "$_lib" ]; then
     source "$_lib"
 else
