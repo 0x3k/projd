@@ -59,7 +59,7 @@ is_protected() {
 }
 
 # --- Check a: Force push ---
-if echo "$COMMAND" | grep -qE 'git\s+push\s.*(-[a-zA-Z]*f\b|--force\b)'; then
+if echo "$COMMAND" | grep -qE 'git\s+push\s+(.+\s)?(-[a-zA-Z]*f\b|--force\b)'; then
     if [ "$ALLOW_FORCE_PUSH" != "true" ]; then
         deny "Force push blocked by .projd/agent.json (allow_force_push: false)."
     fi
