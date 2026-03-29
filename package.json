@@ -1,6 +1,6 @@
 {
   "name": "@0x3k/projd",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Project harness for long-running and parallel AI agent sessions with Claude Code",
   "license": "MIT",
   "repository": {
