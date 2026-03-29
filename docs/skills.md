@@ -10,6 +10,7 @@ projd includes a family of skills that automate the workflow. Some are invoked b
 | `/projd-hands-on [feature-id]` | Select a feature, create branch, present acceptance criteria. You stay in the loop. |
 | `/projd-hands-off [--dry-run]` | Launch parallel agents on independent features. Optional auto-review merges passing PRs. |
 | `/projd-create [name]` | Scaffold a new project from the template (user-level, install with `install-skill.sh`). |
+| `/projd-adopt` | Add projd to an existing project -- copies infrastructure, merges config (user-level, install with `install-skill.sh`). |
 
 ## Agent-facing skills
 

@@ -79,16 +79,28 @@ Run `./scripts/monitor.sh` in a second terminal for a live dashboard -- progress
 Full guide: [Setup](docs/setup.md)
 
 ```bash
-./scripts/install-skill.sh   # install the scaffolding skill (one-time)
+./scripts/install-skill.sh   # install the scaffolding skills (one-time)
 ```
 ```
 /projd-create                 # scaffold a new project from any Claude Code session
+/projd-adopt                  # add projd to an existing project
 /projd-plan "your idea"       # break it into features
 /projd-hands-on               # build one feature at a time
 /projd-hands-off              # or launch parallel agents
 ```
 
 **Next steps:** Check the PRs it created. Read [Features](docs/features.md) for the feature file format, and [Agent Controls](docs/agent-controls.md) to tune git policy and dispatch behavior.
+
+### Adding projd to an existing project
+
+Already have a working codebase? Use `/projd-adopt` instead of `/projd-create`:
+
+```
+cd your-existing-project
+/projd-adopt
+```
+
+The skill copies infrastructure files (skills, hooks, scripts), merges your existing `.claude/settings.json` and `CLAUDE.md` non-destructively, creates `agent.json`, and sets up the `progress/` directory. It supports both developer and vibes modes. See [Setup](docs/setup.md) for details.
 
 ### How it works
 
@@ -223,7 +235,7 @@ Each agent reads `HANDOFF.md` for prior context, implements against acceptance c
 | `progress/` | Per-feature tracking files with acceptance criteria, dependencies, and status |
 | `scripts/` | Setup, validation, smoke tests, monitoring, status line, environment bootstrap |
 | `.claude/hooks/` | Git policy enforcement (PreToolUse hook blocks violations before they execute) |
-| `.claude/skills/` | The projd skill family: plan, hands-on, hands-off, create, start, end |
+| `.claude/skills/` | The projd skill family: plan, hands-on, hands-off, create, adopt, start, end |
 | `lefthook.yml` | Pre-commit hooks (lint + typecheck) and pre-push guard |
 | `setup.sh` | Interactive wizard to configure the template for your language and project |
 

@@ -42,6 +42,7 @@ TEMPLATE_FILES=(
     "scripts/statusline.sh"
     "scripts/validate.sh"
     "scripts/upgrade.sh"
+    "scripts/activate-langs.sh"
     "lefthook.yml"
 )
 

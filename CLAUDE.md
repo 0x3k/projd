@@ -106,6 +106,7 @@ This project includes a skill family called `projd` (project daemon) that automa
 - `/projd-plan` -- Create feature files from requirements. Does not implement.
 - `/projd-hands-on` -- Select a feature, create its branch, present acceptance criteria. You stay in the loop.
 - `/projd-hands-off` -- Launch parallel agents on parallelizable features. Tests are the quality gate.
+- `/projd-adopt` -- Add projd to an existing project (user-level, install with `install-skill.sh`).
 
 **Agent-facing** (auto-triggered by Claude):
 - `projd-start` -- Orient at session start: read state, handoff, smoke test, identify feature.
