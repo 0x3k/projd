@@ -9,8 +9,7 @@ set -euo pipefail
 # Languages with built-in template support: typescript, go, python, swift, kotlin
 # Any language is accepted; unsupported ones skip template activation.
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/lib.sh"
 
 TEMPLATE_LANGS="typescript go python swift kotlin"
 
@@ -181,37 +180,16 @@ if [ -n "$REMOTE_URL" ]; then
     echo "$REMOTE_URL" > .projd/source
 fi
 
-# Compute checksums of template infrastructure files
-TEMPLATE_FILES=(
-    ".claude/hooks/check-git-policy.sh"
-    ".claude/hooks/check-path-guard.sh"
-    ".claude/skills/projd-start/SKILL.md"
-    ".claude/skills/projd-end/SKILL.md"
-    ".claude/skills/projd-plan/SKILL.md"
-    ".claude/skills/projd-hands-on/SKILL.md"
-    ".claude/skills/projd-hands-off/SKILL.md"
-    "scripts/init.sh"
-    "scripts/monitor.sh"
-    "scripts/skill-context.sh"
-    "scripts/smoke.sh"
-    "scripts/status.sh"
-    "scripts/statusline.sh"
-    "scripts/validate.sh"
-    "scripts/upgrade.sh"
-    "scripts/activate-langs.sh"
-    "lefthook.yml"
-)
+load_template_files
 : > .projd/manifest
 for tf in "${TEMPLATE_FILES[@]}"; do
-    if [ -f "$tf" ]; then
-        cs=$(shasum -a 256 "$tf" | awk '{print $1}')
-        printf '%s\t%s\n' "$tf" "$cs" >> .projd/manifest
-    fi
+    [ -f "$tf" ] && printf '%s\t%s\n' "$tf" "$(file_checksum "$tf")" >> .projd/manifest
 done
 echo "[ok] Generated upgrade manifest (.projd/manifest)"
 
 # --- Remove template files ---
 rm -f README.md LICENSE scripts/install-skill.sh scripts/remote-install.sh package.json
+rm -f bin/projd.test.js .claude/hooks/check-git-policy.test.sh .claude/hooks/check-path-guard.test.sh scripts/validate.test.sh scripts/smoke.test.sh
 rm -rf .claude/skills/projd-create .claude/skills/projd-adopt bin
 rm -- "$0"
 echo "[ok] Removed template files (README.md, LICENSE, install-skill.sh, remote-install.sh, package.json, bin/, projd-create/adopt skills, setup.sh)"

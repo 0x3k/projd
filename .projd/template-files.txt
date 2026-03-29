@@ -1,0 +1,21 @@
+# Template infrastructure files tracked by projd upgrade.
+# One path per line, relative to project root.
+.claude/hooks/check-git-policy.sh
+.claude/hooks/check-path-guard.sh
+.claude/skills/projd-start/SKILL.md
+.claude/skills/projd-end/SKILL.md
+.claude/skills/projd-plan/SKILL.md
+.claude/skills/projd-hands-on/SKILL.md
+.claude/skills/projd-hands-off/SKILL.md
+scripts/init.sh
+scripts/lib.sh
+scripts/monitor.sh
+scripts/skill-context.sh
+scripts/smoke.sh
+scripts/status.sh
+scripts/statusline.sh
+scripts/validate.sh
+scripts/upgrade.sh
+scripts/activate-langs.sh
+lefthook.yml
+.projd/template-files.txt

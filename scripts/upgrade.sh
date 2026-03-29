@@ -13,9 +13,7 @@ set -euo pipefail
 #   ./scripts/upgrade.sh --dry-run       # show what would change without applying
 #   ./scripts/upgrade.sh --manifest      # regenerate manifest from current files
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-cd "$PROJECT_DIR"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 MANIFEST_DIR="$PROJECT_DIR/.projd"
 MANIFEST_FILE="$MANIFEST_DIR/manifest"
@@ -23,37 +21,7 @@ DRY_RUN=false
 MANIFEST_ONLY=false
 LOCAL_PATH=""
 
-# --- Template files managed by projd ---
-# These are the files that upgrade will track and update.
-# Project-specific files (CLAUDE.md, agent.json, README.md, progress/) are never touched.
-TEMPLATE_FILES=(
-    ".claude/hooks/check-git-policy.sh"
-    ".claude/hooks/check-path-guard.sh"
-    ".claude/skills/projd-start/SKILL.md"
-    ".claude/skills/projd-end/SKILL.md"
-    ".claude/skills/projd-plan/SKILL.md"
-    ".claude/skills/projd-hands-on/SKILL.md"
-    ".claude/skills/projd-hands-off/SKILL.md"
-    "scripts/init.sh"
-    "scripts/monitor.sh"
-    "scripts/skill-context.sh"
-    "scripts/smoke.sh"
-    "scripts/status.sh"
-    "scripts/statusline.sh"
-    "scripts/validate.sh"
-    "scripts/upgrade.sh"
-    "scripts/activate-langs.sh"
-    "lefthook.yml"
-)
-
-# --- Colors ---
-R='\033[0m'
-DIM='\033[2m'
-GRN='\033[32m'
-YLW='\033[33m'
-RED='\033[31m'
-CYN='\033[36m'
-BLD='\033[1m'
+load_template_files
 
 # --- Parse flags ---
 while [[ $# -gt 0 ]]; do
@@ -72,16 +40,6 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown flag: $1 (try --help)"; exit 1 ;;
     esac
 done
-
-# --- Checksum helper ---
-file_checksum() {
-    local file="$1"
-    if [ -f "$file" ]; then
-        shasum -a 256 "$file" | awk '{print $1}'
-    else
-        echo "MISSING"
-    fi
-}
 
 # --- Manifest operations ---
 
