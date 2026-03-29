@@ -123,7 +123,7 @@ fi
 # --- Check d: Branch creation without prefix ---
 if echo "$COMMAND" | grep -qE 'git\s+(checkout\s+-[bB]|switch\s+-[cC])\s+'; then
     if [ -n "$BRANCH_PREFIX" ]; then
-        NEW_BRANCH=$(echo "$COMMAND" | sed -E 's/.*git[[:space:]]+(checkout[[:space:]]+-b|switch[[:space:]]+-c)[[:space:]]+([^[:space:]]+).*/\2/')
+        NEW_BRANCH=$(echo "$COMMAND" | sed -E 's/.*git[[:space:]]+(checkout[[:space:]]+-[bB]|switch[[:space:]]+-[cC])[[:space:]]+([^[:space:]]+).*/\2/')
         if [[ "$NEW_BRANCH" != "${BRANCH_PREFIX}"* ]]; then
             deny "Branch must use prefix '${BRANCH_PREFIX}'. Use: git checkout -b ${BRANCH_PREFIX}${NEW_BRANCH}"
         fi

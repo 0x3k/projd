@@ -98,9 +98,9 @@ case "$cmd" in
             exit 0
         fi
         sums=$(grep -h '"usage"' "$jsonl_dir"/*.jsonl 2>/dev/null | \
-            jq -r "select(.message.usage != null and .gitBranch == \"$branch\") |
+            jq -r --arg branch "$branch" 'select(.message.usage != null and .gitBranch == $branch) |
                 .message.usage |
-                \"\(.input_tokens // 0) \(.output_tokens // 0) \(.cache_creation_input_tokens // 0) \(.cache_read_input_tokens // 0)\"" 2>/dev/null | \
+                "\(.input_tokens // 0) \(.output_tokens // 0) \(.cache_creation_input_tokens // 0) \(.cache_read_input_tokens // 0)"' 2>/dev/null | \
             awk '{in_t += $1 + $3; out_t += $2; cache_r += $4} END {printf "%d %d %d", in_t+0, out_t+0, cache_r+0}')
         read -r tin tout tcache <<< "$sums"
         total=$((tin + tout))

@@ -96,7 +96,7 @@ out+="${DIM}${model}${R}"
 out+="  ${CYN}${branch}${R}"
 
 # Context %
-out+="  ${CC}${ctx_pct}%%${R}"
+out+="  ${CC}${ctx_pct}%${R}"
 
 # Features
 if [ "$total" -gt 0 ]; then
@@ -148,9 +148,9 @@ fi
 
 # Rate limit warning (show only when getting close)
 if [ "$rl5_pct" -ge 90 ]; then
-    out+="  ${RED}${BLD}rate ${rl5_pct}%%${R}"
+    out+="  ${RED}${BLD}rate ${rl5_pct}%${R}"
 elif [ "$rl5_pct" -ge 70 ]; then
-    out+="  ${YLW}rate ${rl5_pct}%%${R}"
+    out+="  ${YLW}rate ${rl5_pct}%${R}"
 fi
 
-printf "$out\n"
+printf '%b\n' "$out"
