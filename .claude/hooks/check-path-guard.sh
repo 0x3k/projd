@@ -54,7 +54,7 @@ is_inside_project() {
     fi
 
     # Check prefix
-    [[ "$resolved" == "${PROJECT_ROOT}"* ]]
+    [[ "$resolved" == "${PROJECT_ROOT}/"* ]] || [[ "$resolved" == "${PROJECT_ROOT}" ]]
 }
 
 # --- Claude tools: Read, Write, Edit ---
@@ -73,26 +73,29 @@ if [[ "$TOOL" == "Bash" ]]; then
     COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
     [ -z "$COMMAND" ] && exit 0
 
-    # Quick check: reject any ".." in destructive/read commands
-    # This catches rm ../foo, cat ../../etc/passwd, cp -r ../bar ., etc.
-    DANGEROUS_CMDS='(rm|cp|mv|cat|head|tail|touch|chmod)\s'
-    if echo "$COMMAND" | grep -qE "$DANGEROUS_CMDS"; then
-        # Extract file arguments (skip flags starting with -)
-        CMD_NAME=$(echo "$COMMAND" | grep -oE '(rm|cp|mv|cat|head|tail|touch|chmod)' | head -1)
+    # Check destructive/read commands for paths outside the project.
+    # Split compound commands on shell operators and check each segment.
+    DANGEROUS_PAT='(rm|cp|mv|cat|head|tail|touch|chmod)'
+    if printf '%s' "$COMMAND" | grep -qE "${DANGEROUS_PAT}\\s"; then
+        while IFS= read -r segment; do
+            segment="${segment#"${segment%%[![:space:]]*}"}"
+            [ -z "$segment" ] && continue
 
-        # Get everything after the command name
-        ARGS_STR=$(echo "$COMMAND" | sed -E "s/.*${CMD_NAME}[[:space:]]+(.*)/\1/")
+            CMD_NAME=$(printf '%s' "$segment" | grep -oE "$DANGEROUS_PAT" | head -1)
+            [ -z "$CMD_NAME" ] && continue
 
-        for arg in $ARGS_STR; do
-            # Skip flags
-            [[ "$arg" == -* ]] && continue
-            # Skip shell operators
-            [[ "$arg" == "&&" || "$arg" == "||" || "$arg" == ";" || "$arg" == "|" ]] && break
+            ARGS_STR=$(printf '%s' "$segment" | sed -E "s/.*${CMD_NAME}[[:space:]]+(.*)/\1/")
+            [ -z "$ARGS_STR" ] && continue
 
-            if ! is_inside_project "$arg"; then
-                deny "Blocked: '${CMD_NAME} ${arg}' targets a path outside the project directory. File operations are restricted to ${PROJECT_ROOT}."
-            fi
-        done
+            # Use xargs to split arguments respecting shell quoting
+            while IFS= read -r arg; do
+                [ -z "$arg" ] && continue
+                [[ "$arg" == -* ]] && continue
+                if ! is_inside_project "$arg"; then
+                    deny "Blocked: '${CMD_NAME} ${arg}' targets a path outside the project directory. File operations are restricted to ${PROJECT_ROOT}."
+                fi
+            done < <(printf '%s' "$ARGS_STR" | xargs -n1 2>/dev/null)
+        done < <(printf '%s' "$COMMAND" | awk '{gsub(/[[:space:]]*(&&|[|][|]|;|[|])[[:space:]]*/,"\n"); print}')
     fi
 fi
 
