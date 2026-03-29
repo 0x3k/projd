@@ -2,7 +2,7 @@
 
 ## Feature schema
 
-Each feature is a JSON file in `progress/`. The filename should match the `id` (e.g., `progress/user-auth.json`).
+Each feature is a JSON file in `.projd/progress/`. The filename should match the `id` (e.g., `.projd/progress/user-auth.json`).
 
 ```json
 {

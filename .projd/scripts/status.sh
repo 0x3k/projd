@@ -7,8 +7,8 @@ set -euo pipefail
 # Run at the start of every session for quick orientation.
 #
 # Usage:
-#   ./status.sh          # show status for this project (+ sub-projects if any)
-#   ./status.sh --local  # skip sub-projects, show only this directory
+#   ./.projd/scripts/status.sh          # show status for this project (+ sub-projects if any)
+#   ./.projd/scripts/status.sh --local  # skip sub-projects, show only this directory
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 cd "$PROJECT_DIR"
@@ -21,12 +21,12 @@ fi
 # --- Sub-project aggregation ---
 if [ "$LOCAL_ONLY" = false ] && [ -f projects.json ]; then
     for dir in $(jq -r '.projects[].path' projects.json); do
-        if [ -x "$dir/scripts/status.sh" ]; then
+        if [ -x "$dir/.projd/scripts/status.sh" ]; then
             echo ""
             echo "=============================="
             echo "=== $dir"
             echo "=============================="
-            (cd "$dir" && ./scripts/status.sh --local)
+            (cd "$dir" && ./.projd/scripts/status.sh --local)
         fi
     done
     echo ""
@@ -86,13 +86,13 @@ fi
 
 # --- Progress ---
 echo ""
-if [ -d progress ] && ls progress/*.json &>/dev/null; then
+if [ -d .projd/progress ] && ls .projd/progress/*.json &>/dev/null; then
     TOTAL=0
     DONE=0
     IN_PROGRESS=0
     PENDING=0
 
-    for f in progress/*.json; do
+    for f in .projd/progress/*.json; do
         [ -f "$f" ] || continue
         TOTAL=$((TOTAL + 1))
         STATUS=$(jq -r '.status // "pending"' "$f")
@@ -105,7 +105,7 @@ if [ -d progress ] && ls progress/*.json &>/dev/null; then
 
     echo "--- Progress: $DONE/$TOTAL complete ($IN_PROGRESS in progress, $PENDING pending) ---"
 
-    for f in progress/*.json; do
+    for f in .projd/progress/*.json; do
         [ -f "$f" ] || continue
         STATUS=$(jq -r '.status // "pending"' "$f")
         NAME=$(jq -r '.name' "$f")
@@ -129,7 +129,7 @@ if [ -d progress ] && ls progress/*.json &>/dev/null; then
         echo "$LINE"
     done
 else
-    echo "--- No features in progress/ ---"
+    echo "--- No features in .projd/progress/ ---"
 fi
 
 # --- Worktrees ---
@@ -150,11 +150,11 @@ if git rev-parse --is-inside-work-tree &>/dev/null; then
 fi
 
 # --- Agent config ---
-if [ -f agent.json ]; then
+if [ -f .projd/agent.json ]; then
     echo ""
     echo "--- Agent Controls ---"
-    PREFIX=$(jq -r '.git.branch_prefix // empty' agent.json)
-    PUSH=$(jq -r '.git.allow_push // false' agent.json)
-    PROTECTED=$(jq -r '.git.protected_branches // [] | join(", ")' agent.json)
+    PREFIX=$(jq -r '.git.branch_prefix // empty' .projd/agent.json)
+    PUSH=$(jq -r '.git.allow_push // false' .projd/agent.json)
+    PROTECTED=$(jq -r '.git.protected_branches // [] | join(", ")' .projd/agent.json)
     echo "Branch prefix: ${PREFIX:-none}  |  Push: $PUSH  |  Protected: ${PROTECTED:-none}"
 fi

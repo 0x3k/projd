@@ -10,13 +10,13 @@ You are selecting a feature for the current session. You will create a branch an
 
 ## Context
 
-agent.json:
-!`./scripts/skill-context.sh agent-json`
+.projd/agent.json:
+!`./.projd/scripts/skill-context.sh agent-json`
 
-Current branch: !`./scripts/skill-context.sh branch`
+Current branch: !`./.projd/scripts/skill-context.sh branch`
 
 Features:
-!`./scripts/skill-context.sh features`
+!`./.projd/scripts/skill-context.sh features`
 
 ## Arguments
 
@@ -26,7 +26,7 @@ Features:
 
 ### 1. Identify the feature
 
-If a feature ID is provided in `$ARGUMENTS`, use that. Validate it exists as `progress/{id}.json`.
+If a feature ID is provided in `$ARGUMENTS`, use that. Validate it exists as `.projd/progress/{id}.json`.
 
 If no ID provided, auto-select:
 - Filter: `status == "pending"`
@@ -39,13 +39,13 @@ If no eligible feature is found, report that and stop.
 ### 2. Safety checks
 
 - If already on a non-main branch with an in-progress feature, warn the user and ask before switching.
-- Read `agent.json` for `branch_prefix` (default: `agent/`).
+- Read `.projd/agent.json` for `branch_prefix` (default: `agent/`).
 
 ### 3. Create branch and update status
 
 Run: `git checkout -b {branch_prefix}{feature-id}`
 
-Update `progress/{feature-id}.json`:
+Update `.projd/progress/{feature-id}.json`:
 - Set `"status": "in_progress"`
 - Set `"branch": "{branch_prefix}{feature-id}"`
 

@@ -7,9 +7,9 @@ set -euo pipefail
 # plus an auto-updater that checks for new versions once per day.
 #
 # Usage:
-#   ./scripts/install-skill.sh           Install or update all skills
-#   ./scripts/install-skill.sh --check   Show diff if already installed
-#   ./scripts/install-skill.sh --remove  Remove all installed skills
+#   ./.projd/scripts/install-skill.sh           Install or update all skills
+#   ./.projd/scripts/install-skill.sh --check   Show diff if already installed
+#   ./.projd/scripts/install-skill.sh --remove  Remove all installed skills
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 cd "$PROJECT_DIR"
@@ -22,9 +22,9 @@ case "${1:-}" in
     --remove) MODE="remove" ;;
     --help|-h)
         echo "Usage:"
-        echo "  ./scripts/install-skill.sh           Install or update all skills"
-        echo "  ./scripts/install-skill.sh --check   Show diff if already installed"
-        echo "  ./scripts/install-skill.sh --remove  Remove all installed skills"
+        echo "  ./.projd/scripts/install-skill.sh           Install or update all skills"
+        echo "  ./.projd/scripts/install-skill.sh --check   Show diff if already installed"
+        echo "  ./.projd/scripts/install-skill.sh --remove  Remove all installed skills"
         echo ""
         echo "Skills: ${SKILLS[*]}"
         exit 0

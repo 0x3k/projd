@@ -8,10 +8,10 @@ set -euo pipefail
 # prompt the user to choose: overwrite, diff, or keep.
 #
 # Usage:
-#   ./scripts/upgrade.sh                 # upgrade from remote
-#   ./scripts/upgrade.sh --local <path>  # upgrade from a local template copy
-#   ./scripts/upgrade.sh --dry-run       # show what would change without applying
-#   ./scripts/upgrade.sh --manifest      # regenerate manifest from current files
+#   ./.projd/scripts/upgrade.sh                 # upgrade from remote
+#   ./.projd/scripts/upgrade.sh --local <path>  # upgrade from a local template copy
+#   ./.projd/scripts/upgrade.sh --dry-run       # show what would change without applying
+#   ./.projd/scripts/upgrade.sh --manifest      # regenerate manifest from current files
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
@@ -35,7 +35,7 @@ while [[ $# -gt 0 ]]; do
         --manifest) MANIFEST_ONLY=true; shift ;;
         --local)    LOCAL_PATH="$2"; shift 2 ;;
         --help|-h)
-            echo "Usage: ./scripts/upgrade.sh [--dry-run] [--manifest] [--local <path>]"
+            echo "Usage: ./.projd/scripts/upgrade.sh [--dry-run] [--manifest] [--local <path>]"
             echo ""
             echo "  --dry-run    Show what would change without applying"
             echo "  --manifest   Regenerate manifest from current files (no upgrade)"
@@ -280,4 +280,24 @@ if [ "$DRY_RUN" = false ] && [ "$FIRST_RUN" = true ]; then
     echo ""
     echo -e "${DIM}Manifest created at ${MANIFEST_FILE}${R}"
     echo -e "${DIM}Future upgrades will detect your changes automatically.${R}"
+fi
+
+# --- Migration checks ---
+if [ "$DRY_RUN" = false ]; then
+    # Detect pre-split CLAUDE.md (still has workflow sections in root file)
+    if grep -q '## Agent Controls' CLAUDE.md 2>/dev/null && [ -f .claude/CLAUDE.md ]; then
+        echo ""
+        echo -e "${YLW}Migration needed: CLAUDE.md still contains projd workflow sections.${R}"
+        echo -e "${DIM}The workflow sections have moved to .claude/CLAUDE.md.${R}"
+        echo -e "${DIM}Remove everything from '## Agent Controls' onward in your root CLAUDE.md.${R}"
+    fi
+
+    # Warn if solo mode and .claude/CLAUDE.md is not gitignored
+    if [ -f .projd/mode ] && [ "$(cat .projd/mode)" = "solo" ]; then
+        if ! grep -q '\.claude/CLAUDE\.md' .gitignore 2>/dev/null; then
+            echo ""
+            echo -e "${YLW}Solo mode: .claude/CLAUDE.md is not in .gitignore.${R}"
+            echo -e "${DIM}Add it to keep projd infrastructure out of version control.${R}"
+        fi
+    fi
 fi

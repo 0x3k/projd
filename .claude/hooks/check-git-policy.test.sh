@@ -30,19 +30,19 @@ cleanup_tmpdir() {
 
 trap cleanup_tmpdir EXIT
 
-# Create a temp git repo with an initial commit and an agent.json.
+# Create a temp git repo with an initial commit and a .projd/agent.json.
 # Usage: create_repo [branch_to_checkout]
 # Sets REPO_DIR to the created directory.
 create_repo() {
     local branch="${1:-}"
     REPO_DIR="$TMPDIR_ROOT/repo-${TOTAL}"
-    mkdir -p "$REPO_DIR"
+    mkdir -p "$REPO_DIR/.projd"
     git -C "$REPO_DIR" init -q
     git -C "$REPO_DIR" config user.email "test@test.com"
     git -C "$REPO_DIR" config user.name "Test"
 
-    # Write default agent.json
-    cat > "$REPO_DIR/agent.json" <<'AGENT'
+    # Write default .projd/agent.json
+    cat > "$REPO_DIR/.projd/agent.json" <<'AGENT'
 {
   "git": {
     "branch_prefix": "agent/",
@@ -55,7 +55,7 @@ create_repo() {
 AGENT
 
     # Initial commit so HEAD exists and we are on main
-    git -C "$REPO_DIR" add agent.json
+    git -C "$REPO_DIR" add .projd/agent.json
     git -C "$REPO_DIR" commit -q -m "initial commit"
 
     if [ -n "$branch" ]; then
@@ -132,13 +132,13 @@ assert_allowed "non-git command passes through"
 run_hook "$REPO_DIR" "echo hello"
 assert_allowed "echo command passes through"
 
-# ---- 2. Git command with no agent.json passes through ----
+# ---- 2. Git command with no .projd/agent.json passes through ----
 echo ""
-echo "Test group: no agent.json"
+echo "Test group: no .projd/agent.json"
 create_repo
-rm "$REPO_DIR/agent.json"
+rm "$REPO_DIR/.projd/agent.json"
 run_hook "$REPO_DIR" "git push origin main"
-assert_allowed "git push with no agent.json passes through"
+assert_allowed "git push with no .projd/agent.json passes through"
 
 # ---- 3. Force push blocked when allow_force_push=false ----
 echo ""
@@ -152,7 +152,7 @@ assert_denied "force push -f blocked" "Force push blocked"
 
 # ---- 4. Force push allowed when allow_force_push=true ----
 create_repo "agent/feat"
-cat > "$REPO_DIR/agent.json" <<'AGENT'
+cat > "$REPO_DIR/.projd/agent.json" <<'AGENT'
 {
   "git": {
     "branch_prefix": "agent/",
@@ -170,7 +170,7 @@ assert_allowed "force push allowed when allow_force_push=true"
 echo ""
 echo "Test group: push policies"
 create_repo "agent/feat"
-cat > "$REPO_DIR/agent.json" <<'AGENT'
+cat > "$REPO_DIR/.projd/agent.json" <<'AGENT'
 {
   "git": {
     "branch_prefix": "agent/",
@@ -204,7 +204,7 @@ assert_denied "push to protected branch name as arg blocked" "protected branch"
 
 # ---- 9. Push allowed when allow_push=true ----
 create_repo "random-branch"
-cat > "$REPO_DIR/agent.json" <<'AGENT'
+cat > "$REPO_DIR/.projd/agent.json" <<'AGENT'
 {
   "git": {
     "branch_prefix": "agent/",
@@ -271,7 +271,7 @@ run_hook "$REPO_DIR" "echo foo && git commit -m 'sneaky'"
 assert_denied "git commit after && on protected branch blocked" "Cannot commit directly to protected branch"
 
 create_repo "agent/feat"
-cat > "$REPO_DIR/agent.json" <<'AGENT'
+cat > "$REPO_DIR/.projd/agent.json" <<'AGENT'
 {
   "git": {
     "branch_prefix": "agent/",

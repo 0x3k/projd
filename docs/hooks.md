@@ -1,6 +1,6 @@
 # Hook Architecture
 
-projd enforces git policies from `agent.json` through two independent layers: a Claude Code PreToolUse hook (primary) and a Lefthook pre-push hook (secondary). Together they ensure the agent cannot violate branch protection, push restrictions, or naming conventions -- even if it tries multiple approaches. A third hook (path guard) is available for vibes mode to prevent file operations outside the project directory.
+projd enforces git policies from `.projd/agent.json` through two independent layers: a Claude Code PreToolUse hook (primary) and a Lefthook pre-push hook (secondary). Together they ensure the agent cannot violate branch protection, push restrictions, or naming conventions -- even if it tries multiple approaches. A third hook (path guard) is available for vibes mode to prevent file operations outside the project directory.
 
 ## PreToolUse Hook (Primary)
 
@@ -14,7 +14,7 @@ This hook runs before every bash command that Claude Code executes. It receives 
 
 1. Claude Code is about to run a bash command (e.g., `git push origin agent/my-feature`)
 2. The hook receives JSON: `{"tool_name": "Bash", "tool_input": {"command": "git push origin agent/my-feature"}}`
-3. The hook reads `agent.json` to get the current policy
+3. The hook reads `.projd/agent.json` to get the current policy
 4. It checks the command against each policy rule
 5. If any rule is violated, it returns: `{"decision": "block", "reason": "..."}`
 6. If all rules pass, it exits 0 with no output (command proceeds)
@@ -36,13 +36,13 @@ The hook handles git push refspecs correctly. For `git push origin src:dst`, it 
 ### Edge cases
 
 - **Initial commit**: When `git rev-parse HEAD` fails (no commits yet), direct commits are allowed on any branch. This lets `setup.sh` and `/projd-create` make the first commit.
-- **Missing agent.json**: If `agent.json` doesn't exist or can't be parsed, the hook exits silently (allows everything). This prevents the hook from blocking work in repos that haven't been configured.
+- **Missing agent.json**: If `.projd/agent.json` doesn't exist or can't be parsed, the hook exits silently (allows everything). This prevents the hook from blocking work in repos that haven't been configured.
 - **Non-git commands**: The hook only inspects commands that start with `git`. All other commands pass through immediately.
 
 ## Lefthook Pre-Push Hook (Secondary)
 
 **File**: `lefthook.yml` (under `pre-push`)
-**Installed by**: `./scripts/init.sh` (via `lefthook install`)
+**Installed by**: `./.projd/scripts/init.sh` (via `lefthook install`)
 
 This hook runs when `git push` is invoked directly in the terminal -- outside of Claude Code. It provides the same push-policy enforcement as a safety net.
 
@@ -99,7 +99,7 @@ When enabled, it is configured with two matchers -- one for Bash commands and on
 
 ## Configuration
 
-Both hooks read from the same `agent.json`:
+Both hooks read from the same `.projd/agent.json`:
 
 ```json
 {
@@ -113,7 +113,7 @@ Both hooks read from the same `agent.json`:
 }
 ```
 
-Changes to `agent.json` take effect immediately -- both hooks read it fresh on every invocation. There is no cache to invalidate.
+Changes to `.projd/agent.json` take effect immediately -- both hooks read it fresh on every invocation. There is no cache to invalidate.
 
 ## Settings
 

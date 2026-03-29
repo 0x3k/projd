@@ -2,7 +2,7 @@
 
 ## Dispatch
 
-`/projd-hands-off` reads `dispatch.max_agents` from `agent.json` (default **20**). If more features are eligible than the limit, they are dispatched in waves -- the next batch starts after the current one completes. Each agent runs in its own git worktree with its own feature branch, so there are no write conflicts.
+`/projd-hands-off` reads `dispatch.max_agents` from `.projd/agent.json` (default **20**). If more features are eligible than the limit, they are dispatched in waves -- the next batch starts after the current one completes. Each agent runs in its own git worktree with its own feature branch, so there are no write conflicts.
 
 Use `--dry-run` to preview which features would be dispatched and in what order before committing to a run.
 
@@ -20,17 +20,17 @@ The Claude Code status line shows feature progress at a glance, updated after ev
 Opus 4.6  main  42%  |  3/7  2 wip  |  2 agents  |  15.2k/4.8k tok  +156/-23  12m
 ```
 
-It reads `progress/*.json` files and counts active git worktrees, so when parallel agents update feature status or create/remove worktrees, the status line reflects it on the next refresh. The status line is configured in `.claude/settings.json` and powered by `scripts/statusline.sh`.
+It reads `.projd/progress/*.json` files and counts active git worktrees, so when parallel agents update feature status or create/remove worktrees, the status line reflects it on the next refresh. The status line is configured in `.claude/settings.json` and powered by `.projd/scripts/statusline.sh`.
 
 ### Monitor dashboard
 
 For a detailed live view, run the monitor from another terminal:
 
 ```bash
-./scripts/monitor.sh            # interactive dashboard (default 5s refresh)
-./scripts/monitor.sh --once     # print snapshot and exit (non-interactive)
-./scripts/monitor.sh --watch    # auto-refresh every 5 seconds
-./scripts/monitor.sh --watch 3  # auto-refresh every 3 seconds
+./.projd/scripts/monitor.sh            # interactive dashboard (default 5s refresh)
+./.projd/scripts/monitor.sh --once     # print snapshot and exit (non-interactive)
+./.projd/scripts/monitor.sh --watch    # auto-refresh every 5 seconds
+./.projd/scripts/monitor.sh --watch 3  # auto-refresh every 3 seconds
 ```
 
 The monitor shows:

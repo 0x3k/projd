@@ -7,9 +7,9 @@ set -euo pipefail
 # Should complete in under 30 seconds.
 #
 # Usage:
-#   ./smoke.sh           # run all checks (local + sub-projects)
-#   ./smoke.sh lint      # run only the "lint" check
-#   ./smoke.sh typecheck # run only the "typecheck" check
+#   ./.projd/scripts/smoke.sh           # run all checks (local + sub-projects)
+#   ./.projd/scripts/smoke.sh lint      # run only the "lint" check
+#   ./.projd/scripts/smoke.sh typecheck # run only the "typecheck" check
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 cd "$PROJECT_DIR"
@@ -37,10 +37,10 @@ run_check() {
 # --- Sub-project aggregation ---
 if [ -f projects.json ] && [ "$TARGET" = "all" ]; then
     for dir in $(jq -r '.projects[].path' projects.json); do
-        if [ -x "$dir/scripts/smoke.sh" ]; then
+        if [ -x "$dir/.projd/scripts/smoke.sh" ]; then
             echo ""
             echo "=== $dir ==="
-            if (cd "$dir" && ./scripts/smoke.sh); then
+            if (cd "$dir" && ./.projd/scripts/smoke.sh); then
                 PASS=$((PASS + 1))
             else
                 FAIL=$((FAIL + 1))

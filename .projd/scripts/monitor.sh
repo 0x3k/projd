@@ -11,10 +11,10 @@ set -euo pipefail
 # with single-key commands. Auto-refreshes in the background.
 #
 # Usage:
-#   ./scripts/monitor.sh            # interactive dashboard (default 5s refresh)
-#   ./scripts/monitor.sh --watch    # same as above (kept for compat)
-#   ./scripts/monitor.sh --watch 3  # custom refresh interval
-#   ./scripts/monitor.sh --once     # print snapshot and exit (non-interactive)
+#   ./.projd/scripts/monitor.sh            # interactive dashboard (default 5s refresh)
+#   ./.projd/scripts/monitor.sh --watch    # same as above (kept for compat)
+#   ./.projd/scripts/monitor.sh --watch 3  # custom refresh interval
+#   ./.projd/scripts/monitor.sh --once     # print snapshot and exit (non-interactive)
 #
 # Navigation:
 #   Up/k      Move selection up
@@ -121,7 +121,7 @@ fi
 
 feature_file() {
     local id="$1"
-    echo "progress/${id}.json"
+    echo ".projd/progress/${id}.json"
 }
 
 feature_field() {
@@ -147,7 +147,7 @@ resolve_branch() {
     if [ -z "$branch" ]; then
         # Try to infer from agent.json prefix
         local prefix
-        prefix=$(jq -r '.git.branch_prefix // "agent/"' agent.json 2>/dev/null)
+        prefix=$(jq -r '.git.branch_prefix // "agent/"' .projd/agent.json 2>/dev/null)
         local candidate="${prefix}${id}"
         if git rev-parse --verify "$candidate" &>/dev/null; then
             branch="$candidate"
@@ -239,7 +239,7 @@ load_features() {
     local wip_ac=()  ready_ac=()  block_ac=()  done_ac=()
 
     [ -z "${ZSH_VERSION:-}" ] && shopt -s nullglob
-    for f in progress/*.json; do
+    for f in .projd/progress/*.json; do
         [ -f "$f" ] || continue
         # Single jq call: emit tab-separated fields
         local row
@@ -277,7 +277,7 @@ load_features() {
     # repo's progress file hasn't been updated yet (the agent writes to
     # its worktree copy, not the main repo).
     local prefix
-    prefix=$(jq -r '.git.branch_prefix // "agent/"' agent.json 2>/dev/null)
+    prefix=$(jq -r '.git.branch_prefix // "agent/"' .projd/agent.json 2>/dev/null)
     local wt_branches=""
     wt_branches=$(git worktree list --porcelain 2>/dev/null | awk '/^branch / { sub("refs/heads/", "", $2); print $2 }')
 
@@ -654,7 +654,7 @@ load_slow_data() {
     CACHED_PR_COUNT=0
     if command -v gh &>/dev/null && gh auth status &>/dev/null 2>&1; then
         local prefix_val
-        prefix_val=$(jq -r '.git.branch_prefix // "agent/"' agent.json 2>/dev/null)
+        prefix_val=$(jq -r '.git.branch_prefix // "agent/"' .projd/agent.json 2>/dev/null)
         local prs
         prs=$(gh pr list --state open --json number,title,headRefName --jq ".[] | select(.headRefName | startswith(\"$prefix_val\"))" 2>/dev/null || true)
         if [ -n "$prs" ]; then
@@ -966,7 +966,7 @@ render() {
             lines+="${_line}\n"
         done
     else
-        lines+="  ${DIM}No features in progress/${R}\n"
+        lines+="  ${DIM}No features in .projd/progress/${R}\n"
     fi
 
     # Worktrees (from cache)
@@ -1431,7 +1431,7 @@ if [ "$ONCE" = true ]; then
             printf "  ${DIM}%s${R}\n" "$merged_line"
         fi
     else
-        printf "  ${DIM}No features in progress/${R}\n"
+        printf "  ${DIM}No features in .projd/progress/${R}\n"
     fi
     echo ""
     exit 0

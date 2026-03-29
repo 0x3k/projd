@@ -1,6 +1,6 @@
 # Agent Controls
 
-`agent.json` defines what agents are allowed to do:
+`.projd/agent.json` defines what agents are allowed to do:
 
 ```json
 {

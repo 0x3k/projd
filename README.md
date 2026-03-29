@@ -37,7 +37,7 @@ projd adds the missing pieces: session continuity, git guardrails, a feature lif
 ```
 $ /projd-plan "A CLI tool for managing dev environments with Docker"
 
-  Created 7 features in progress/:
+  Created 7 features in .projd/progress/:
     1. config-loader       Parse YAML config with validation and defaults
     2. env-lifecycle       Create, start, stop, destroy environments
     3. docker-backend      Docker container management (blocked by: config-loader)
@@ -73,7 +73,7 @@ $ /projd-hands-off
   7/7 features complete. 7 PRs ready for review.
 ```
 
-Run `./scripts/monitor.sh` in a second terminal for a live dashboard -- progress bars, per-feature token tracking, and keyboard shortcuts to act on features directly. See [Parallel Agents](docs/parallel-agents.md) for details.
+Run `./.projd/scripts/monitor.sh` in a second terminal for a live dashboard -- progress bars, per-feature token tracking, and keyboard shortcuts to act on features directly. See [Parallel Agents](docs/parallel-agents.md) for details.
 
 ---
 
@@ -114,13 +114,13 @@ pnpm dlx @0x3k/projd
 **Or with curl** (from anywhere):
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/scripts/remote-install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/.projd/scripts/remote-install.sh)
 ```
 
 **Or from a local clone:**
 
 ```bash
-./scripts/install-skill.sh
+./.projd/scripts/install-skill.sh
 ```
 
 This installs `/projd-create` and `/projd-adopt` to `~/.claude/skills/`. Skills auto-update once per day when invoked.
@@ -144,7 +144,7 @@ cd your-existing-project
 /projd-adopt
 ```
 
-The skill copies infrastructure files (skills, hooks, scripts), merges your existing `.claude/settings.json` and `CLAUDE.md` non-destructively, creates `agent.json`, and sets up the `progress/` directory. It supports both developer and vibes modes. See [Setup](docs/setup.md) for details.
+The skill copies infrastructure files (skills, hooks, scripts), merges your existing `.claude/settings.json` and `CLAUDE.md` non-destructively, creates `.projd/agent.json`, and sets up the `.projd/progress/` directory. It supports both developer and vibes modes. See [Setup](docs/setup.md) for details.
 
 ### How it works
 
@@ -152,7 +152,7 @@ The skill copies infrastructure files (skills, hooks, scripts), merges your exis
   /projd-plan "requirements"
           |
           v
-  progress/*.json (feature files)
+  .projd/progress/*.json (feature files)
           |
     +-----+------+
     |            |
@@ -229,7 +229,7 @@ you review   reviewer agent
    |                  |----------------->|  feature-c       |
 ```
 
-Set `"auto_review": true` in `agent.json` to enable vibes mode. The reviewer runs smoke tests, verifies acceptance criteria, and merges passing PRs. If it finds issues, it fixes trivial ones inline and spawns a subagent for larger fixes. PRs that still fail after fixes are flagged for manual review.
+Set `"auto_review": true` in `.projd/agent.json` to enable vibes mode. The reviewer runs smoke tests, verifies acceptance criteria, and merges passing PRs. If it finds issues, it fixes trivial ones inline and spawns a subagent for larger fixes. PRs that still fail after fixes are flagged for manual review.
 
 Each agent reads `HANDOFF.md` for prior context, implements against acceptance criteria, runs smoke tests, and creates a PR. `/projd-plan` again when new work comes in.
 
@@ -256,21 +256,22 @@ Each agent reads `HANDOFF.md` for prior context, implements against acceptance c
 
 | Path | Purpose |
 |------|---------|
-| `CLAUDE.md` | Agent instructions: session protocol, git controls, feature workflow |
-| `agent.json` | Git policy and dispatch config (branch protection, push control, parallel limits) |
-| `progress/` | Per-feature tracking files with acceptance criteria, dependencies, and status |
-| `scripts/` | Setup, validation, smoke tests, monitoring, status line, environment bootstrap |
+| `CLAUDE.md` | Project knowledge: overview, build commands, architecture, conventions |
+| `.claude/CLAUDE.md` | projd workflow: agent controls, session protocol, feature lifecycle |
+| `.projd/agent.json` | Git policy and dispatch config (branch protection, push control, parallel limits) |
+| `.projd/progress/` | Per-feature tracking files with acceptance criteria, dependencies, and status |
+| `.projd/scripts/` | Setup, validation, smoke tests, monitoring, status line, environment bootstrap |
 | `.claude/hooks/` | Git policy enforcement (PreToolUse hook blocks violations before they execute) |
 | `.claude/skills/` | The projd skill family: plan, hands-on, hands-off, create, adopt, start, end |
 | `lefthook.yml` | Pre-commit hooks (lint + typecheck) and pre-push guard |
-| `setup.sh` | Interactive wizard to configure the template for your language and project |
+| `setup.sh` | Interactive wizard to configure language, project details, and team/solo mode |
 
 ## Parallel Agents
 
 `/projd-hands-off` dispatches parallel agents on independent features. Each gets its own git worktree and branch.
 
 ```
-progress/*.json
+.projd/progress/*.json
       |
       v
   +-----------+     +----------------+     +-----------+
@@ -287,7 +288,7 @@ progress/*.json
 
 Features with `blocked_by` dependencies are scheduled in waves -- each wave starts only after its blockers complete.
 
-With **vibes mode** (`"auto_review": true` in `agent.json`), the loop closes itself -- a reviewer agent checks each PR, fixes what it can, and merges passing ones automatically. You only get pulled in when something fails twice.
+With **vibes mode** (`"auto_review": true` in `.projd/agent.json`), the loop closes itself -- a reviewer agent checks each PR, fixes what it can, and merges passing ones automatically. You only get pulled in when something fails twice.
 
 > [!TIP]
 > Use `--dry-run` to preview dispatch order before committing to a run.
@@ -296,19 +297,19 @@ See [Parallel Agents](docs/parallel-agents.md) for the full dispatch protocol, m
 
 ## Monorepo / Multi-Project
 
-Add a `projects.json` at the root and each sub-project becomes its own projd instance -- own `CLAUDE.md`, `progress/`, and scripts. Agents work across sub-projects in parallel, and root-level features handle cross-cutting work.
+Add a `projects.json` at the root and each sub-project becomes its own projd instance -- own `CLAUDE.md`, `.projd/progress/`, and `.projd/scripts/`. Agents work across sub-projects in parallel, and root-level features handle cross-cutting work.
 
 ```
   projects.json
        |
-       +-- services/api/          (own CLAUDE.md, progress/, scripts)
+       +-- services/api/          (own CLAUDE.md, .projd/progress/, .projd/scripts/)
        |     +-- feature-a  -->  agent in worktree
        |     +-- feature-b  -->  agent in worktree
        |
-       +-- services/worker/       (own CLAUDE.md, progress/, scripts)
+       +-- services/worker/       (own CLAUDE.md, .projd/progress/, .projd/scripts/)
        |     +-- feature-c  -->  agent in worktree
        |
-       +-- root progress/         (cross-cutting features)
+       +-- root .projd/progress/  (cross-cutting features)
              +-- feature-d  -->  agent in worktree
 ```
 

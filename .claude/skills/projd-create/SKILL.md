@@ -61,6 +61,7 @@ Use a single AskUserQuestion call with the remaining choice questions:
 
 1. **Language** (header: "Language", multiSelect: true): Options: `Go`, `TypeScript`, `Python`, `You choose` (you infer the best language from the project name/description and confirm with the user). The user picks "Other" to type a different language not listed.
 2. **GitHub repo** (header: "GitHub"): Only include this question if `gh auth status` showed an authenticated session. Options: "Private repo (Recommended)", "Public repo", "No GitHub repo". If gh is not authenticated, skip this question entirely (mention it in the output, suggesting `gh auth login`).
+3. **Mode** (header: "Mode"): "How should projd files be managed?" Options: `Team -- committed to git (Recommended)`, `Solo -- gitignored, only you see them`.
 
 After the AskUserQuestion answers come back, print a message asking for the remaining details. If a project name was provided in `$ARGUMENTS`, use it and skip that prompt.
 
@@ -83,6 +84,8 @@ Based on the project description, choose the most suitable language. Do not ask 
 For GitHub: check the `gh auth status` result from earlier.
 - If `gh` is authenticated: default to **private repo**. Do not ask.
 - If `gh` is not authenticated: default to **no remote** (local-only). Do not ask.
+
+For mode: default to **solo**. Do not ask.
 
 Derive the **target path** as `./<project-name>`. Print a brief summary (name, language you picked, description, GitHub choice) and ask the user to confirm. Keep it short -- one confirmation, not a multi-step interview.
 
@@ -151,10 +154,10 @@ cd "<target-path>" && git init
 ### 6. Run setup
 
 ```bash
-cd "<target-path>" && ./setup.sh --name "<name>" --lang "<comma-separated-langs>" --desc "<desc>"
+cd "<target-path>" && ./setup.sh --name "<name>" --lang "<comma-separated-langs>" --desc "<desc>" --mode "<mode>"
 ```
 
-Pass languages as a comma-separated string (e.g., `--lang "go,python"`). This activates language blocks for languages that have built-in template support, updates the project overview in CLAUDE.md (Name, Language, Purpose), removes the example feature, runs init.sh and validate.sh, and creates a starter README.md.
+Pass languages as a comma-separated string (e.g., `--lang "go,python"`). Pass the mode from the interview (`team` or `solo`). This activates language blocks for languages that have built-in template support, updates the project overview in CLAUDE.md (Name, Language, Purpose), removes the example feature, handles mode-specific gitignore and settings, runs init.sh and validate.sh, and creates a starter README.md.
 
 If setup.sh fails, report the error. Do NOT delete the target directory -- leave it for manual recovery. Stop.
 
@@ -177,13 +180,13 @@ If any of the chosen languages do NOT have built-in template blocks (i.e., they 
 ```
 Choose the standard linter/formatter for the language (e.g., `cargo clippy` and `cargo fmt --check` for Rust, `rubocop` for Ruby, `checkstyle` for Java).
 
-**`scripts/smoke.sh`** -- add `run_check` lines after the comment `# --- Local checks ---`. Follow the existing pattern:
+**`.projd/scripts/smoke.sh`** -- add `run_check` lines after the comment `# --- Local checks ---`. Follow the existing pattern:
 ```bash
 run_check "<name>" <command>
 ```
 Use the same tools chosen for lefthook (e.g., `run_check "clippy" cargo clippy -- -D warnings` for Rust).
 
-**`scripts/init.sh`** -- add dependency installation lines after the comment `# --- Dependencies ---`. Follow the existing pattern:
+**`.projd/scripts/init.sh`** -- add dependency installation lines after the comment `# --- Dependencies ---`. Follow the existing pattern:
 ```bash
 if [ -f <manifest-file> ]; then
     <install command>
@@ -198,7 +201,7 @@ Skip this step entirely if all chosen languages have built-in template support.
 
 If no GitHub repo was chosen (either explicitly in developer mode, or because `gh` was not authenticated in vibes mode):
 
-1. Update `agent.json` in the target path -- set `allow_push` to `false` and `auto_review` to `false` (no PRs to review without a remote):
+1. Update `.projd/agent.json` in the target path -- set `allow_push` to `false` and `auto_review` to `false` (no PRs to review without a remote):
 
 ```json
 {
@@ -216,7 +219,7 @@ If no GitHub repo was chosen (either explicitly in developer mode, or because `g
 }
 ```
 
-2. Add the following note to `CLAUDE.md` in the target path, immediately after the `## Agent Controls` heading (before the prose that starts with "Read `agent.json`..."):
+2. Add the following note to `.claude/CLAUDE.md` in the target path, immediately after the `## Agent Controls` heading (before the prose that starts with "Read `.projd/agent.json`..."):
 
 ```markdown
 **No remote repository.** Do not push, create PRs, or reference remote branches. All work stays local.
@@ -229,29 +232,29 @@ Skip this step if the user chose a GitHub repo (private or public).
 
 Skip this step if no GitHub repo was configured (step 6c already set `auto_review: false`).
 
-**Vibes mode** (with GitHub repo): set `dispatch.auto_review` to `true` in `agent.json`. Do not ask -- full automation is the point.
+**Vibes mode** (with GitHub repo): set `dispatch.auto_review` to `true` in `.projd/agent.json`. Do not ask -- full automation is the point.
 
 **Developer mode** (with GitHub repo): use AskUserQuestion:
 
 1. **Auto-review** (header: "Auto-review"): "Should agents auto-review and merge PRs from parallel workers?" Options: "Yes -- review, fix, and merge automatically", "No -- I review PRs myself (Recommended)".
 
-Update `agent.json` in the target path based on the answer:
+Update `.projd/agent.json` in the target path based on the answer:
 - If yes: set `dispatch.auto_review` to `true`
 - If no: leave `dispatch.auto_review` as `false`
 
-The `dispatch.max_agents` default of 20 is fine for most projects. Do not ask about it -- the user can tune it later in `agent.json`.
+The `dispatch.max_agents` default of 20 is fine for most projects. Do not ask about it -- the user can tune it later in `.projd/agent.json`.
 
 ### 6e. Vibes mode permissions
 
 Skip this step if the user chose developer mode.
 
-In vibes mode, the agent should be able to work without manual approval prompts. Update `.claude/settings.json` in the target path to expand the `permissions.allow` list so common commands are auto-approved.
+In vibes mode, the agent should be able to work without manual approval prompts. Update the settings file in the target path (`.claude/settings.local.json` if solo mode, `.claude/settings.json` if team mode) to expand the `permissions.allow` list so common commands are auto-approved.
 
 Set `permissions.allow` to:
 
 ```json
 [
-  "Bash(./scripts/*)",
+  "Bash(./.projd/scripts/*)",
   "Bash(git *)",
   "Bash(grep *)",
   "Bash(rg *)",

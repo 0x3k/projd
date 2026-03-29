@@ -7,8 +7,8 @@ set -euo pipefail
 # so the token bypasses 2FA without touching the user's global config.
 #
 # Usage:
-#   ./scripts/publish.sh           # publish current version
-#   ./scripts/publish.sh --dry-run # preview without publishing
+#   ./.projd/scripts/publish.sh           # publish current version
+#   ./.projd/scripts/publish.sh --dry-run # preview without publishing
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 cd "$PROJECT_DIR"
