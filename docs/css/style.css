@@ -789,6 +789,28 @@ section {
   line-height: 1.5;
 }
 
+/* -- Use cases section -- */
+
+.use-cases { text-align: center; }
+
+.use-cases h2 {
+  font-size: 1.75rem;
+  margin-bottom: 48px;
+}
+
+.use-case-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.use-case-caveat {
+  font-size: 0.85rem;
+  color: var(--dim);
+  font-style: italic;
+}
+
 /* -- Quick start -- */
 
 .quickstart { text-align: center; }
@@ -945,6 +967,7 @@ section {
   .feature-secondary { grid-template-columns: 1fr 1fr; }
   .example-panels { grid-template-columns: 1fr; }
   .diff-cards { grid-template-columns: 1fr; }
+  .use-case-grid { grid-template-columns: 1fr; }
   .prereqs { grid-template-columns: 1fr 1fr; }
 }
 

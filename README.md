@@ -35,34 +35,58 @@ projd adds the missing pieces: session continuity, git guardrails, a feature lif
 ### What it looks like
 
 ```
-$ /projd-plan "A REST API with user auth and todo CRUD"
+$ /projd-plan "A CLI tool for managing dev environments with Docker"
 
-  Created 3 features in progress/:
-    1. user-auth       JWT-based login and registration
-    2. todo-crud       CRUD endpoints for todo items (blocked by: user-auth)
-    3. api-docs        OpenAPI spec generation
+  Created 7 features in progress/:
+    1. config-loader       Parse YAML config with validation and defaults
+    2. env-lifecycle       Create, start, stop, destroy environments
+    3. docker-backend      Docker container management (blocked by: config-loader)
+    4. template-engine     Project templates with variable substitution (blocked by: config-loader)
+    5. port-forwarding     Automatic port mapping and conflict detection (blocked by: docker-backend)
+    6. shell-completions   Bash/zsh/fish completions (blocked by: env-lifecycle)
+    7. status-dashboard    Live TUI showing running environments (blocked by: docker-backend)
 
 $ /projd-hands-off --dry-run
 
   Dispatch plan (max_agents: 20):
-    Wave 1: user-auth, api-docs      (2 agents, parallel)
-    Wave 2: todo-crud                (1 agent, after user-auth completes)
+    Wave 1: config-loader, env-lifecycle                        (2 agents)
+    Wave 2: docker-backend, template-engine, shell-completions  (3 agents)
+    Wave 3: port-forwarding, status-dashboard                   (2 agents)
 
-  3 features, 2 waves. Run without --dry-run to start.
+  7 features, 3 waves. Run without --dry-run to start.
 
 $ /projd-hands-off
 
   Dispatching wave 1...
-    [user-auth]  worktree created   branch: agent/user-auth
-    [api-docs]   worktree created   branch: agent/api-docs
+    [config-loader]  worktree created   branch: agent/config-loader
+    [env-lifecycle]  worktree created   branch: agent/env-lifecycle
 
   Wave 1 complete. Dispatching wave 2...
-    [todo-crud]  worktree created   branch: agent/todo-crud
+    [docker-backend]     worktree created   branch: agent/docker-backend
+    [template-engine]    worktree created   branch: agent/template-engine
+    [shell-completions]  worktree created   branch: agent/shell-completions
 
-  3/3 features complete. 3 PRs ready for review.
+  Wave 2 complete. Dispatching wave 3...
+    [port-forwarding]    worktree created   branch: agent/port-forwarding
+    [status-dashboard]   worktree created   branch: agent/status-dashboard
+
+  7/7 features complete. 7 PRs ready for review.
 ```
 
 Run `./scripts/monitor.sh` in a second terminal for a live dashboard -- progress bars, per-feature token tracking, and keyboard shortcuts to act on features directly. See [Parallel Agents](docs/parallel-agents.md) for details.
+
+---
+
+### When to use projd
+
+| Scenario | Why projd helps |
+|----------|----------------|
+| **Greenfield build from a spec** | You have requirements. projd decomposes them into features, builds them in parallel, and you review PRs. A weekend project that would take a week of sequential sessions. |
+| **Adding a major capability to an existing app** | `/projd-adopt` + `/projd-plan`. The dependency graph ensures new features build on each other correctly. Agents can't break what's already working because smoke tests gate completion. |
+| **Batch of independent improvements** | 8 features on your backlog, none depend on each other. `/projd-hands-off` builds all 8 in parallel. You merge the PRs. |
+| **Multi-service monorepo** | `projects.json` gives each service its own progress tracker. Agents work across services in parallel without conflicts. |
+
+projd is overkill for single-feature bug fixes, quick scripts, or exploratory "I don't know what I want yet" sessions. Just use Claude Code directly for those.
 
 ---
 
@@ -153,25 +177,7 @@ you review   reviewer agent
      /projd-plan (repeat)
 ```
 
-**Hands-on** -- you stay in the loop with one agent:
-
-```
-  YOU                AGENT
-   |                   |
-   |  /projd-hands-on  |
-   |------------------>|
-   |                   |  reads HANDOFF.md
-   |                   |  runs smoke tests
-   |                   |  implements feature
-   |                   |  commits + pushes
-   |     PR ready      |
-   |<------------------|
-   |                   |
-   |  review + merge   |
-   |  next feature     |
-   |------------------>|
-   :     (repeat)      :
-```
+**Hands-on** -- you stay in the loop with one agent. You pick a feature, the agent implements it, you review the PR and start the next one. Good for when you want to steer.
 
 **Hands-off** -- agents work in parallel, you review at the end:
 
@@ -267,18 +273,19 @@ Each agent reads `HANDOFF.md` for prior context, implements against acceptance c
 progress/*.json
       |
       v
-  +---+---+---+         +---+---+
-  | Wave 1    |         | Wave 2 |    (blocked_by resolved)
-  +-----------+         +--------+
-  | user-auth | ------> | todo   |
-  | api-docs  |         | crud   |
-  +-----------+         +--------+
-      |                     |
-      v                     v
-  2 PRs created         1 PR created
+  +-----------+     +----------------+     +-----------+
+  | Wave 1    |     | Wave 2         |     | Wave 3    |
+  +-----------+     +----------------+     +-----------+
+  | config    | --> | docker-backend | --> | port-fwd  |
+  | env-life  |     | template-eng   |     | status-ui |
+  |           |     | completions    |     |           |
+  +-----------+     +----------------+     +-----------+
+      |                   |                     |
+      v                   v                     v
+  2 PRs              3 PRs                 2 PRs
 ```
 
-Features with `blocked_by` dependencies are scheduled in waves -- wave 2 starts only after its blockers complete.
+Features with `blocked_by` dependencies are scheduled in waves -- each wave starts only after its blockers complete.
 
 With **vibes mode** (`"auto_review": true` in `agent.json`), the loop closes itself -- a reviewer agent checks each PR, fixes what it can, and merges passing ones automatically. You only get pulled in when something fails twice.
 
