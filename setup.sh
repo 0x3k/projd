@@ -10,6 +10,7 @@ set -euo pipefail
 # Any language is accepted; unsupported ones skip template activation.
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/lib.sh"
+cd "$PROJECT_DIR"
 
 TEMPLATE_LANGS="typescript go python swift kotlin"
 

@@ -47,6 +47,7 @@ fi
 
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib.sh"
+cd "$PROJECT_DIR"
 
 INTERVAL=5
 ONCE=false

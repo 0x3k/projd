@@ -21,7 +21,12 @@ DRY_RUN=false
 MANIFEST_ONLY=false
 LOCAL_PATH=""
 
+cd "$PROJECT_DIR"
 load_template_files
+
+if [ ${#TEMPLATE_FILES[@]} -eq 0 ]; then
+    log_warn "No template files found (.projd/template-files.txt is missing or empty)"
+fi
 
 # --- Parse flags ---
 while [[ $# -gt 0 ]]; do

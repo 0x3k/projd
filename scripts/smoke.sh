@@ -12,6 +12,7 @@ set -euo pipefail
 #   ./smoke.sh typecheck # run only the "typecheck" check
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
+cd "$PROJECT_DIR"
 
 PASS=0
 FAIL=0

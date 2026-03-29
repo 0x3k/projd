@@ -11,6 +11,7 @@ set -euo pipefail
 #   ./validate.sh --strict  # also run smoke.sh (slower)
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
+cd "$PROJECT_DIR"
 
 STRICT=false
 if [ "${1:-}" = "--strict" ]; then
