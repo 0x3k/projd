@@ -35,14 +35,16 @@ projd/
 │       ├── projd-hands-on/SKILL.md   # Feature selection (user-invocable)
 │       ├── projd-hands-off/SKILL.md  # Parallel dispatch (user-invocable)
 │       ├── projd-end/SKILL.md        # Session wrap-up (agent-facing)
-│       └── projd-create/SKILL.md     # Scaffolding (user-level, installed separately)
+│       ├── projd-create/SKILL.md     # Scaffolding (user-level, installed separately)
+│       └── projd-adopt/SKILL.md      # Adopt into existing project (user-level, installed separately)
 ├── scripts/
 │   ├── status.sh                     # Project state overview
 │   ├── smoke.sh                      # Fast lint + typecheck verification
 │   ├── validate.sh                   # Configuration validation
 │   ├── init.sh                       # Environment bootstrap
+│   ├── activate-langs.sh             # Language block activation (used by setup.sh and adopt)
 │   ├── skill-context.sh              # Context provider for skills
-│   └── install-skill.sh              # Install /projd-create to user-level skills
+│   └── install-skill.sh              # Install /projd-create and /projd-adopt to user-level skills
 ├── docs/                             # Additional documentation
 ├── progress/
 │   └── example-feature.json          # Example feature file (removed by setup.sh)
@@ -59,7 +61,7 @@ projd/
 When a user runs `setup.sh` or `/projd-create`, they get a copy of this repo with:
 - Language-specific blocks activated in `lefthook.yml`, `smoke.sh`, and `init.sh`
 - `CLAUDE.md` filled in with their project details
-- Template files removed (`README.md`, `LICENSE`, `setup.sh`, `install-skill.sh`, the `projd-create` skill directory)
+- Template files removed (`README.md`, `LICENSE`, `setup.sh`, `install-skill.sh`, the `projd-create` and `projd-adopt` skill directories)
 - The example feature file removed
 
 Everything else ships as-is. Changes you make to scripts, skills, hooks, or configuration directly affect what new projects receive.
@@ -80,7 +82,7 @@ Several files use a marker-based system to support multiple languages in one tem
 # [/go]
 ```
 
-`setup.sh` processes these markers with AWK:
+`scripts/activate-langs.sh` processes these markers with AWK (called by both `setup.sh` and `/projd-adopt`):
 - For the selected language(s): uncomments the block (removes the leading `# ` prefix)
 - For all other languages: deletes the entire block
 
@@ -90,7 +92,7 @@ This applies to `lefthook.yml`, `scripts/smoke.sh`, and `scripts/init.sh`. To ad
 
 Skills are Markdown files at `.claude/skills/<name>/SKILL.md`. They contain instructions that Claude Code executes when invoked. There are two kinds:
 
-- **User-invocable** (`/projd-plan`, `/projd-hands-on`, `/projd-hands-off`, `/projd-create`): Triggered by the operator typing the slash command. These have `disable-model-invocation: true` in frontmatter so the agent can't trigger them on its own.
+- **User-invocable** (`/projd-plan`, `/projd-hands-on`, `/projd-hands-off`, `/projd-create`, `/projd-adopt`): Triggered by the operator typing the slash command. These have `disable-model-invocation: true` in frontmatter so the agent can't trigger them on its own.
 - **Agent-facing** (`projd-start`, `projd-end`): Triggered by the agent during its workflow. No `disable-model-invocation` restriction.
 
 Skills call `./scripts/skill-context.sh` to load project state (features, agent config, git status, etc.) without requiring complex shell expressions.

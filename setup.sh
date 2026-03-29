@@ -88,88 +88,15 @@ echo "  Desc:      $DESC"
 echo ""
 
 # --- Activate language blocks ---
-# Files use markers like:
-#   # [typescript]
-#   # commented code...
-#   # [/typescript]
-#
-# For the selected language: uncomment the block (remove "# " prefix).
-# For other languages: delete the block entirely.
-
-activate_langs() {
-    local file="$1"
-    shift
-    local langs="$*"
-    local tmpfile
-    tmpfile=$(mktemp)
-
-    awk -v langs="$langs" '
-    BEGIN {
-        split(langs, arr, " ")
-        for (i in arr) selected[arr[i]] = 1
-        skip = 0; uncomment = 0; blank = 0
-    }
-    {
-        # Opening tag: # [langname]
-        if ($0 ~ /# \[[a-z]+\]$/ && $0 !~ /\//) {
-            tag = $0
-            gsub(/.*\[/, "", tag)
-            gsub(/\].*/, "", tag)
-            if (tag in selected) {
-                uncomment = 1
-            } else {
-                skip = 1
-            }
-            next
-        }
-        # Closing tag: # [/langname]
-        if ($0 ~ /# \[\/[a-z]+\]/) {
-            skip = 0
-            uncomment = 0
-            next
-        }
-        if (skip) next
-        if (uncomment) {
-            sub(/# /, "")
-        }
-        # Collapse consecutive blank lines
-        if ($0 ~ /^[[:space:]]*$/) {
-            if (!blank) { print; blank = 1 }
-            next
-        }
-        blank = 0
-        print
-    }
-    ' "$file" > "$tmpfile"
-
-    # Preserve executable bit
-    if [ -x "$file" ]; then
-        chmod +x "$tmpfile"
-    fi
-    mv "$tmpfile" "$file"
-}
+# Delegates to scripts/activate-langs.sh which handles uncommenting
+# selected language blocks and removing unselected ones.
 
 for f in lefthook.yml scripts/smoke.sh scripts/init.sh; do
     if [ -f "$f" ]; then
-        activate_langs "$f" $LANGS
+        ./scripts/activate-langs.sh "$f" $LANGS
     fi
 done
 echo "[ok] Activated language blocks in template files"
-
-# --- Remove placeholder command and setup comment from lefthook.yml ---
-if [ -f lefthook.yml ]; then
-    tmpfile=$(mktemp)
-    awk '
-    /placeholder:/ { skip = 1; next }
-    skip && /run:/ { skip = 0; next }
-    skip { next }
-    /activated by \.\/setup\.sh/ { next }
-    /delete the placeholder/ { next }
-    { print }
-    ' lefthook.yml > "$tmpfile"
-    mv "$tmpfile" lefthook.yml
-    echo "[ok] Removed placeholder from lefthook.yml"
-fi
 
 # --- Update CLAUDE.md ---
 if [ -f CLAUDE.md ]; then
@@ -271,6 +198,7 @@ TEMPLATE_FILES=(
     "scripts/statusline.sh"
     "scripts/validate.sh"
     "scripts/upgrade.sh"
+    "scripts/activate-langs.sh"
     "lefthook.yml"
 )
 : > .projd/manifest
@@ -284,9 +212,9 @@ echo "[ok] Generated upgrade manifest (.projd/manifest)"
 
 # --- Remove template files ---
 rm -f README.md LICENSE scripts/install-skill.sh
-rm -rf .claude/skills/projd-create
+rm -rf .claude/skills/projd-create .claude/skills/projd-adopt
 rm -- "$0"
-echo "[ok] Removed template files (README.md, LICENSE, install-skill.sh, projd-create skill, setup.sh)"
+echo "[ok] Removed template files (README.md, LICENSE, install-skill.sh, projd-create/adopt skills, setup.sh)"
 
 # --- Create project README ---
 cat > README.md << READMEEOF
