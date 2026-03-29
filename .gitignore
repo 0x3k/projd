@@ -44,3 +44,4 @@ lefthook-local.yml
 .projd/manifest
 .projd/mode
 .projd/source
+.projd/no-init

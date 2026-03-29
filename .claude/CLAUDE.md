@@ -146,6 +146,18 @@ This project uses [Lefthook](https://github.com/evilmartians/lefthook) for pre-c
 
 Git policies from `.projd/agent.json` are enforced by a Claude Code PreToolUse hook (`.claude/hooks/check-git-policy.sh`). The Lefthook pre-push hook provides a secondary guard for direct git usage outside Claude Code.
 
+## First-Time Setup
+
+At the start of a session, check if the development environment is initialized:
+
+1. Run: `test -f .git/hooks/pre-commit && echo "initialized" || echo "not initialized"`
+2. If **initialized**, skip this section entirely.
+3. If **not initialized**, check: `test -f .projd/no-init && echo "declined" || echo "not declined"`
+4. If **declined**, skip this section entirely.
+5. Otherwise, tell the user the dev environment has not been initialized and ask if they want to run `./.projd/scripts/init.sh` (installs git hooks and dependencies, safe to re-run).
+   - If they say **yes**: run `./.projd/scripts/init.sh`
+   - If they say **no**: run `touch .projd/no-init` and do not ask again.
+
 ## Code Conventions (projd)
 
 - Never use emojis in code or comments
