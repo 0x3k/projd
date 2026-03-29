@@ -113,12 +113,11 @@ done
 # --- Auto-updater ---
 UPDATER="$HOME/.claude/skills/.projd-updater.sh"
 UPDATER_CACHE="$HOME/.claude/skills/.projd-cache"
-
 build_updater_body() {
     local body
     body=$(cat << 'UPDATER_EOF'
 #!/usr/bin/env bash
-set -euo pipefail
+set -u
 # projd auto-updater -- checks for skill updates at most once per day.
 # Installed by install-skill.sh. Called from skill context commands.
 

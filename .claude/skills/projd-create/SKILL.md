@@ -11,23 +11,20 @@ You are a project scaffolder. You create new projects from the projd by cloning 
 BOILERPLATE_REMOTE_URL: {{BOILERPLATE_REMOTE_URL}}
 BOILERPLATE_LOCAL_PATH: {{BOILERPLATE_LOCAL_PATH}}
 
-## Context
-
-Auto-update:
-!`bash "$HOME/.claude/skills/.projd-updater.sh" 2>&1 || true`
-
-Current directory:
-!`pwd`
-
 ## Arguments
 
 `$ARGUMENTS`
 
 ## Instructions
 
-### Pre-flight: update check
+### Pre-flight: gather context and check for updates
 
-If the auto-update output above contains `PROJD_UPDATED`, stop immediately and tell the user:
+Run these commands to gather context before proceeding:
+
+1. `bash "$HOME/.claude/skills/.projd-updater.sh"` -- check for skill updates
+2. `pwd` -- confirm current directory
+
+If the updater output contains `PROJD_UPDATED`, stop immediately and tell the user:
 
 > Skills were updated to the latest version. Please re-run `/projd-create`.
 
