@@ -74,6 +74,44 @@ After running `setup.sh`, use the validation script to check that everything was
 
 This checks that `CLAUDE.md` is filled in, `agent.json` is valid, `lefthook.yml` has active hooks, `smoke.sh` has active checks, and feature files (if any) have valid schemas. Failures block; warnings are advisory.
 
+## Upgrading
+
+When the projd template gets new features or fixes, update your project with:
+
+```bash
+./scripts/upgrade.sh              # upgrade from remote
+./scripts/upgrade.sh --dry-run    # preview what would change
+./scripts/upgrade.sh --local /path/to/projd   # upgrade from a local template copy
+./scripts/upgrade.sh --manifest   # regenerate manifest from current files (no upgrade)
+```
+
+### How it works
+
+The upgrade script tracks which template files it installed using a manifest (`.projd/manifest`) containing SHA256 checksums. On each upgrade it compares three states:
+
+1. **Template** (latest version from remote or local source)
+2. **Manifest** (what was installed last time)
+3. **Current** (what's on disk now)
+
+If the current file matches the manifest (you haven't modified it), the new template version is applied silently. If you've made local changes, the script prompts you to choose: **diff**, **overwrite**, **keep** yours, or **merge** (saves your version as `.orig` and installs the template).
+
+### Template source
+
+The upgrade script looks for the template URL in this order:
+
+1. `.projd/source` (written by `setup.sh` and `/projd-create` at scaffold time)
+2. A git remote named `projd` (`git remote add projd <url>`)
+
+If neither is set, use `--local <path>` to point to a local clone of the template.
+
+### What it upgrades
+
+Only template-managed infrastructure files are tracked: hooks, skills, scripts, and `lefthook.yml`. Project-specific files (`CLAUDE.md`, `agent.json`, `README.md`, `progress/`) are never touched.
+
+### First upgrade
+
+If no manifest exists (e.g., a project created before upgrade support was added), the script treats all differing files as locally modified and prompts for each one. After completion it creates the manifest for future upgrades.
+
 ## Bootstrapping the environment
 
 ```bash

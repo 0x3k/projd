@@ -1,6 +1,6 @@
 # Hook Architecture
 
-projd enforces git policies from `agent.json` through two independent layers: a Claude Code PreToolUse hook (primary) and a Lefthook pre-push hook (secondary). Together they ensure the agent cannot violate branch protection, push restrictions, or naming conventions -- even if it tries multiple approaches.
+projd enforces git policies from `agent.json` through two independent layers: a Claude Code PreToolUse hook (primary) and a Lefthook pre-push hook (secondary). Together they ensure the agent cannot violate branch protection, push restrictions, or naming conventions -- even if it tries multiple approaches. A third hook (path guard) is available for vibes mode to prevent file operations outside the project directory.
 
 ## PreToolUse Hook (Primary)
 
@@ -55,6 +55,48 @@ This hook runs when `git push` is invoked directly in the terminal -- outside of
 
 The pre-push hook can be bypassed with `git push --no-verify`. This is intentional -- it's a guard for the operator, not a hard lock. The PreToolUse hook has no bypass.
 
+## Path Guard Hook (Vibes Mode)
+
+**File**: `.claude/hooks/check-path-guard.sh`
+**Configured by**: `/projd-create` (vibes mode) and `/projd-adopt` (vibes mode)
+**Timeout**: 10 seconds
+
+In vibes mode, most tools are auto-approved. The path guard hook prevents the agent from reading, writing, or deleting files outside the project directory -- catching `..` traversal, absolute path escapes, and symlink tricks.
+
+### How it works
+
+1. For Claude tools (`Read`, `Write`, `Edit`): checks that `tool_input.file_path` resolves to a path inside the project root
+2. For Bash commands (`rm`, `cp`, `mv`, `cat`, `head`, `tail`, `touch`, `chmod`): extracts file arguments and checks each resolves inside the project root
+3. Path resolution handles relative paths, `..` components, and symlinks by walking up to the nearest existing ancestor directory
+
+### What it checks
+
+| Tool type | Check |
+|-----------|-------|
+| `Read`, `Write`, `Edit` | `file_path` must resolve inside the project directory |
+| `rm`, `cp`, `mv`, `cat`, `head`, `tail`, `touch`, `chmod` | All file arguments must resolve inside the project directory |
+
+### When it's enabled
+
+This hook is NOT enabled by default. It is added to `.claude/settings.json` only when vibes mode is selected during `/projd-create` or `/projd-adopt`. In developer mode, the standard permission prompts provide sufficient protection.
+
+When enabled, it is configured with two matchers -- one for Bash commands and one for file tools:
+
+```json
+{
+  "matcher": "Bash",
+  "hooks": [
+    { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-path-guard.sh", "timeout": 10 }
+  ]
+},
+{
+  "matcher": "Read|Write|Edit",
+  "hooks": [
+    { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-path-guard.sh", "timeout": 10 }
+  ]
+}
+```
+
 ## Configuration
 
 Both hooks read from the same `agent.json`:
@@ -86,8 +128,8 @@ The PreToolUse hook is configured in `.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/check-git-policy.sh",
-            "timeout": 10000
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-git-policy.sh",
+            "timeout": 10
           }
         ]
       }
@@ -96,7 +138,7 @@ The PreToolUse hook is configured in `.claude/settings.json`:
 }
 ```
 
-The `matcher` restricts the hook to `Bash` tool calls only. Other tools (Read, Edit, Write, etc.) are not intercepted.
+The `matcher` restricts the hook to `Bash` tool calls only. Other tools (Read, Edit, Write, etc.) are not intercepted. The `$CLAUDE_PROJECT_DIR` variable ensures the hook is found regardless of the current working directory.
 
 ## Debugging
 

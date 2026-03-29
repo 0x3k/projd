@@ -1017,9 +1017,9 @@ render() {
         lines+="  ${DIM}j/k${R} navigate  ${DIM}d${R} detail  ${DIM}l${R} log  ${DIM}p${R} pr  ${DIM}r${R} reset  ${DIM}c${R} complete  ${DIM}x${R} kill  ${DIM}m${R} merge  ${DIM}q${R} quit\n"
     fi
 
-    # Write to screen: cursor home, overwrite, then clear remaining lines (no flicker)
+    # Write to screen: cursor home, erase trailing chars per line, clear below
     printf '\033[H'
-    printf '%b' "$lines"
+    printf '%b' "${lines//\\n/\\033[K\\n}"
     printf '\033[J'
 }
 

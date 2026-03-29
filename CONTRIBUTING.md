@@ -26,7 +26,8 @@ projd is a template repository -- the files in this repo are what get copied int
 projd/
 ├── .claude/
 │   ├── hooks/
-│   │   └── check-git-policy.sh      # PreToolUse hook: git policy enforcement
+│   │   ├── check-git-policy.sh      # PreToolUse hook: git policy enforcement
+│   │   └── check-path-guard.sh      # PreToolUse hook: path escape guard (vibes mode)
 │   ├── settings.json                 # Claude Code project settings (committed)
 │   ├── settings.local.json           # Local overrides (gitignored)
 │   └── skills/
@@ -44,6 +45,9 @@ projd/
 │   ├── init.sh                       # Environment bootstrap
 │   ├── activate-langs.sh             # Language block activation (used by setup.sh and adopt)
 │   ├── skill-context.sh              # Context provider for skills
+│   ├── statusline.sh                 # Claude Code status line provider
+│   ├── monitor.sh                    # Interactive live dashboard for parallel sessions
+│   ├── upgrade.sh                    # Update project to latest template version
 │   └── install-skill.sh              # Install /projd-create and /projd-adopt to user-level skills
 ├── docs/                             # Additional documentation
 ├── progress/
@@ -100,6 +104,8 @@ Skills call `./scripts/skill-context.sh` to load project state (features, agent 
 ### Hook System
 
 The PreToolUse hook (`.claude/hooks/check-git-policy.sh`) is the primary enforcement layer for `agent.json`. It runs before every bash command, receives the command as JSON on stdin, and returns a JSON deny decision if the command violates policy. See [docs/hooks.md](docs/hooks.md) for the full architecture.
+
+A second PreToolUse hook (`.claude/hooks/check-path-guard.sh`) blocks file operations that target paths outside the project directory. It catches absolute paths, `..` traversal, and symlink escapes in both Bash commands (`rm`, `cp`, `mv`, etc.) and Claude tools (`Read`, `Write`, `Edit`). This hook is only enabled in vibes mode (configured by `/projd-create` and `/projd-adopt`).
 
 A secondary pre-push hook in `lefthook.yml` provides the same push-policy checks for direct git usage outside of Claude Code.
 
