@@ -96,19 +96,14 @@ else
         REMOTE_URL=$(cat "$MANIFEST_DIR/source")
     fi
 
-    # Fallback: check install-skill.sh for the baked-in URL
+    # Fallback: check for a git remote named 'projd'
     if [ -z "$REMOTE_URL" ]; then
         REMOTE_URL=$(git -C "$PROJECT_DIR" config --get remote.projd.url 2>/dev/null || true)
     fi
 
+    # Fallback: hardcoded template URL
     if [ -z "$REMOTE_URL" ]; then
-        echo -e "${RED}Cannot determine template source.${R}"
-        echo ""
-        echo "Options:"
-        echo "  1. Run with --local <path-to-projd-template>"
-        echo "  2. Set the source: git remote add projd <url>"
-        echo "  3. Write the URL to .projd/source"
-        exit 1
+        REMOTE_URL="https://github.com/0x3k/projd.git"
     fi
 
     echo -e "${DIM}Fetching template from ${REMOTE_URL}...${R}"

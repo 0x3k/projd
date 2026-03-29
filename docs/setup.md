@@ -131,8 +131,9 @@ The upgrade script looks for the template URL in this order:
 
 1. `.projd/source` (written by `setup.sh` and `/projd-create` at scaffold time)
 2. A git remote named `projd` (`git remote add projd <url>`)
+3. Hardcoded default: `https://github.com/0x3k/projd.git`
 
-If neither is set, use `--local <path>` to point to a local clone of the template.
+To override all of these, use `--local <path>` to point to a local clone of the template. If you use a fork, write your fork URL to `.projd/source` so upgrades pull from there instead of the default.
 
 ### What it upgrades
 
