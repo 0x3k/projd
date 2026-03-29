@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>projd -- Project harness for AI coding agents</title>
+  <meta name="description" content="A project harness for long-running and parallel AI agent sessions. Feature planning, git guardrails, parallel dispatch, and session continuity for Claude Code.">
+  <meta property="og:title" content="projd -- Project harness for AI coding agents">
+  <meta property="og:description" content="You describe what you want. projd breaks it into features. Claude builds them -- one at a time or twenty in parallel. You review PRs.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/terminal.css">
+</head>
+<body>
+
+  <!-- ============================================ -->
+  <!-- HERO -->
+  <!-- ============================================ -->
+  <section class="hero">
+    <div class="container">
+      <h1 class="hero-title">proj<span class="accent">d</span></h1>
+      <p class="hero-tagline">A project harness for long-running and parallel AI agent sessions.</p>
+      <p class="hero-pitch">You describe what you want. projd breaks it into features. Claude builds them -- one at a time or twenty in parallel. You review PRs. That's the whole deal.</p>
+      <div class="hero-ctas">
+        <a href="#quickstart" class="btn btn-primary">Get Started</a>
+        <a href="https://github.com/0x3k/projd" class="btn btn-secondary" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+      </div>
+
+      <div class="terminal" id="hero-terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dots">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+          </div>
+          <span class="terminal-title">projd</span>
+        </div>
+        <div class="terminal-body">
+          <pre></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- THE PROBLEM -->
+  <!-- ============================================ -->
+  <section class="problem" id="problem">
+    <div class="container">
+      <h2 class="fade-in">Claude Code works great in a single sitting. Then...</h2>
+
+      <div class="problem-cards fade-in">
+        <div class="problem-card">
+          <span class="icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f85149" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/><line x1="2" y1="2" x2="22" y2="22" stroke="#f85149" stroke-width="2"/></svg>
+          </span>
+          <h3>Context lost</h3>
+          <p>Long sessions lose context. The agent forgets what it already built and starts second-guessing decisions from earlier.</p>
+        </div>
+        <div class="problem-card">
+          <span class="icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#d29922" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/><line x1="18" y1="3" x2="18" y2="3.01"/><path d="M12 3l-2 4 4-1-2 4" stroke="#d29922"/></svg>
+          </span>
+          <h3>Branch chaos</h3>
+          <p>Multiple agents commit to the wrong branch, overwrite each other's work, or push directly to main.</p>
+        </div>
+        <div class="problem-card">
+          <span class="icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8b949e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          </span>
+          <h3>No guardrails</h3>
+          <p>Nothing stops the agent from force-pushing, skipping tests, or starting work that conflicts with other agents.</p>
+        </div>
+      </div>
+
+      <p class="problem-transition fade-in">projd adds the missing pieces.</p>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- FEATURES -->
+  <!-- ============================================ -->
+  <section class="features" id="features">
+    <div class="container">
+      <h2 class="fade-in">Everything agents need. Nothing they don't.</h2>
+
+      <div class="feature-grid fade-in">
+        <div class="feature-card">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <h3>Feature Planning</h3>
+          <p>Break requirements into JSON feature files with acceptance criteria and dependency ordering.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          <h3>Branch Isolation</h3>
+          <p>Each agent works in its own git worktree on its own branch. No conflicts.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <h3>Git Policy Enforcement</h3>
+          <p>PreToolUse hooks block violations before they execute. The agent cannot bypass branch protection.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="6" height="10" rx="1"/><rect x="9" y="3" width="6" height="14" rx="1"/><rect x="16" y="5" width="6" height="12" rx="1"/></svg>
+          <h3>Parallel Dispatch</h3>
+          <p>Up to 20 agents in dependency-aware waves, with optional auto-review and merge.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14 2 14 8 20 8"/><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M12 18v-6"/><path d="M9 15l3-3 3 3"/></svg>
+          <h3>Session Continuity</h3>
+          <p>Structured HANDOFF.md preserves context between sessions instead of relying on chat history.</p>
+        </div>
+        <div class="feature-card">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <h3>Smoke-Test Gates</h3>
+          <p>Features are not marked complete until lint, typecheck, and tests pass. Enforced, not optional.</p>
+        </div>
+      </div>
+
+      <div class="feature-secondary fade-in">
+        <div class="feature-pill">
+          <strong>Monitor Dashboard</strong>
+          Live TUI with progress bars, token tracking, keyboard shortcuts.
+        </div>
+        <div class="feature-pill">
+          <strong>Multi-Project</strong>
+          Monorepo support with per-project features and aggregated status.
+        </div>
+        <div class="feature-pill">
+          <strong>Upgradeable</strong>
+          SHA256 manifest tracking for template updates without losing customizations.
+        </div>
+        <div class="feature-pill">
+          <strong>5 Languages</strong>
+          TypeScript, Go, Python, Swift, Kotlin with built-in template blocks.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- HOW IT WORKS -->
+  <!-- ============================================ -->
+  <section class="workflow" id="workflow">
+    <div class="container">
+      <h2 class="fade-in">Plan. Dispatch. Review. Ship.</h2>
+      <p class="workflow-subtitle fade-in">Three modes for different levels of control.</p>
+
+      <div class="workflow-tabs fade-in">
+        <button class="workflow-tab active" data-tab="wf-hands-on">Hands-on</button>
+        <button class="workflow-tab" data-tab="wf-hands-off">Hands-off</button>
+        <button class="workflow-tab" data-tab="wf-vibes">Vibes mode</button>
+      </div>
+
+      <!-- Hands-on -->
+      <div class="workflow-panel active" id="wf-hands-on">
+        <div class="workflow-steps">
+          <div class="wf-step">
+            <div class="wf-step-marker actor-you">Y</div>
+            <div class="wf-step-content">
+              <h4><code>/projd-hands-on</code></h4>
+              <p>You pick a feature and kick off the agent.</p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-agent">A</div>
+            <div class="wf-step-content">
+              <h4>Reads HANDOFF.md</h4>
+              <p>Agent picks up context from the previous session.</p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-agent">A</div>
+            <div class="wf-step-content">
+              <h4>Runs smoke tests</h4>
+              <p>Verifies the codebase is healthy before starting.</p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-agent">A</div>
+            <div class="wf-step-content">
+              <h4>Implements feature</h4>
+              <p>Works against acceptance criteria. Commits incrementally.</p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-agent">A</div>
+            <div class="wf-step-content">
+              <h4>Pushes + creates PR</h4>
+              <p><span class="seq-msg-badge badge-green">PR ready</span></p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-you">Y</div>
+            <div class="wf-step-content">
+              <h4>Review + merge</h4>
+              <p>You review the PR and start the next feature.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hands-off -->
+      <div class="workflow-panel" id="wf-hands-off">
+        <div class="workflow-steps">
+          <div class="wf-step">
+            <div class="wf-step-marker actor-you">Y</div>
+            <div class="wf-step-content">
+              <h4><code>/projd-hands-off</code></h4>
+              <p>You launch parallel dispatch. That's it.</p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-dispatch">D</div>
+            <div class="wf-step-content">
+              <h4>Scans features, plans waves</h4>
+              <p>Identifies pending unblocked features and groups them into parallel waves.</p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+
+          <div class="wf-parallel-group">
+            <span class="wf-parallel-label">wave 1</span>
+            <div class="wf-step">
+              <div class="wf-step-marker actor-agent">A</div>
+              <div class="wf-step-content">
+                <h4>agent/user-auth</h4>
+                <p>Isolated worktree. Implements, commits, pushes, creates PR.</p>
+              </div>
+            </div>
+            <div class="wf-connector"></div>
+            <div class="wf-step">
+              <div class="wf-step-marker actor-agent">A</div>
+              <div class="wf-step-content">
+                <h4>agent/api-docs</h4>
+                <p>Runs in parallel. No conflicts.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-dispatch">D</div>
+            <div class="wf-step-content">
+              <h4>Blockers done. Wave 2.</h4>
+              <p><span class="seq-msg-badge badge-yellow">user-auth complete -- todo-crud unblocked</span></p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+
+          <div class="wf-parallel-group">
+            <span class="wf-parallel-label">wave 2</span>
+            <div class="wf-step">
+              <div class="wf-step-marker actor-agent">A</div>
+              <div class="wf-step-content">
+                <h4>agent/todo-crud</h4>
+                <p>Starts only after its dependency is complete.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-you">Y</div>
+            <div class="wf-step-content">
+              <h4>3 PRs ready for review</h4>
+              <p><span class="seq-msg-badge badge-green">3/3 features complete</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vibes mode -->
+      <div class="workflow-panel" id="wf-vibes">
+        <div class="workflow-steps">
+          <div class="wf-step">
+            <div class="wf-step-marker actor-you">Y</div>
+            <div class="wf-step-content">
+              <h4><code>/projd-hands-off</code> <span class="seq-msg-badge badge-purple">auto_review: true</span></h4>
+              <p>You start it and walk away.</p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-dispatch">D</div>
+            <div class="wf-step-content">
+              <h4>Dispatches agents in waves</h4>
+              <p>Same parallel dispatch as hands-off mode.</p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+
+          <div class="wf-parallel-group">
+            <span class="wf-parallel-label">wave 1</span>
+            <div class="wf-step">
+              <div class="wf-step-marker actor-agent">A</div>
+              <div class="wf-step-content">
+                <h4>Agents build features</h4>
+                <p>Each creates a PR when done.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-review">R</div>
+            <div class="wf-step-content">
+              <h4>Reviewer agent checks each PR</h4>
+              <p>Runs smoke tests. Verifies acceptance criteria.</p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-review">R</div>
+            <div class="wf-step-content">
+              <h4>Pass? Auto-merge.</h4>
+              <p><span class="seq-msg-badge badge-green">PR merged automatically</span></p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-review">R</div>
+            <div class="wf-step-content">
+              <h4>Fail? Fix + retry.</h4>
+              <p>Fixes trivial issues inline. Spawns subagent for larger fixes. Still fails? <span class="seq-msg-badge badge-red">Flagged for you</span></p>
+            </div>
+          </div>
+          <div class="wf-connector"></div>
+          <div class="wf-step">
+            <div class="wf-step-marker actor-dispatch">D</div>
+            <div class="wf-step-content">
+              <h4>Wave 2 begins after blockers merge</h4>
+              <p>The loop closes itself. You only get pulled in when something fails twice.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- REAL EXAMPLES -->
+  <!-- ============================================ -->
+  <section class="examples" id="examples">
+    <div class="container">
+      <h2 class="fade-in">See it in action</h2>
+      <p class="examples-subtitle fade-in">Real artifacts from a projd workflow.</p>
+
+      <div class="example-panels">
+
+        <!-- Panel A: Feature File -->
+        <div class="example-panel fade-in">
+          <div class="example-label">Feature File &mdash; progress/user-auth.json</div>
+          <div class="example-body">
+<pre><span class="json-bracket">{</span>
+  <span class="json-key">"id"</span>: <span class="json-string">"user-auth"</span>,
+  <span class="json-key">"name"</span>: <span class="json-string">"User Authentication"</span>,
+  <span class="json-key">"description"</span>: <span class="json-string">"JWT-based login and registration."</span>,
+  <span class="json-key">"acceptance_criteria"</span>: <span class="json-bracket">[</span> <span class="callout">testable, not vague</span>
+    <span class="json-string">"POST /auth/register creates a user and returns a JWT"</span>,
+    <span class="json-string">"POST /auth/login returns JWT for valid creds, 401 for invalid"</span>,
+    <span class="json-string">"Protected routes return 401 without a valid token"</span>
+  <span class="json-bracket">]</span>,
+  <span class="json-key">"priority"</span>: <span class="json-number">1</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"pending"</span>, <span class="callout">pending / in_progress / complete</span>
+  <span class="json-key">"branch"</span>: <span class="json-string">""</span>,
+  <span class="json-key">"blocked_by"</span>: <span class="json-bracket">[]</span>, <span class="callout">dependency ordering</span>
+  <span class="json-key">"notes"</span>: <span class="json-string">""</span>
+<span class="json-bracket">}</span></pre>
+          </div>
+        </div>
+
+        <!-- Panel B: Dispatch Plan -->
+        <div class="example-panel fade-in">
+          <div class="example-label">Dispatch Plan &mdash; /projd-hands-off --dry-run</div>
+          <div class="example-body" style="padding-bottom: 0;">
+<pre><span class="term-output">  Dispatch plan </span><span class="term-warn">(max_agents: 20)</span><span class="term-output">:</span>
+<span class="term-output">    Wave 1: </span><span class="term-highlight">user-auth, api-docs</span><span class="term-output">      (2 agents)</span>
+<span class="term-output">    Wave 2: </span><span class="term-highlight">todo-crud</span><span class="term-output">                (after user-auth)</span>
+</pre>
+          </div>
+          <div class="wave-diagram">
+            <div class="wave-row">
+              <span class="wave-label">wave 1</span>
+              <span class="wave-box done">user-auth</span>
+              <span class="wave-box done">api-docs</span>
+            </div>
+            <div class="wave-row">
+              <span class="wave-label"></span>
+              <span class="wave-arrow">&#8595;</span>
+            </div>
+            <div class="wave-row">
+              <span class="wave-label">wave 2</span>
+              <span class="wave-box wip">todo-crud</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel C: Monitor Dashboard (full width) -->
+        <div class="example-panel full-width fade-in">
+          <div class="example-label">Live Monitor &mdash; ./scripts/monitor.sh</div>
+          <div class="monitor-mockup">
+            <div class="monitor-header">
+              <span id="monitor-spinner" class="spinner">&#x2808;</span>
+              <strong style="color: var(--text)"> projd monitor</strong>
+              &nbsp;&nbsp;my-api &mdash; REST API with auth
+              &nbsp;&nbsp;<span style="color: var(--dim)">14:32:15</span>
+            </div>
+
+            <div class="monitor-progress">
+              <span class="progress-fill" id="progress-fill">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span><span class="progress-empty">&#9617;&#9617;&#9617;&#9617;&#9617;&#9617;&#9617;&#9617;</span>
+              &nbsp;&nbsp;<span style="color: var(--green)">60%</span>
+              &nbsp;&nbsp;<span style="color: var(--dim)">3 done &nbsp;2 wip &nbsp;0 pending &nbsp;(5 total)</span>
+              &nbsp;&nbsp;<span style="color: var(--dim)">tokens: 45.2k in / 12.1k out</span>
+            </div>
+
+            <table class="monitor-table">
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>State</th>
+                  <th>Wave</th>
+                  <th>Branch</th>
+                  <th>Tokens</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="color: var(--text)">user-auth</td>
+                  <td class="state-done">done</td>
+                  <td>1</td>
+                  <td class="branch-name">agent/user-auth</td>
+                  <td class="token-count">12.4k</td>
+                  <td><span class="seq-msg-badge badge-purple" style="font-size:0.65rem">PR #12</span></td>
+                </tr>
+                <tr>
+                  <td style="color: var(--text)">api-docs</td>
+                  <td class="state-done">done</td>
+                  <td>1</td>
+                  <td class="branch-name">agent/api-docs</td>
+                  <td class="token-count">8.1k</td>
+                  <td><span class="seq-msg-badge badge-purple" style="font-size:0.65rem">PR #13</span></td>
+                </tr>
+                <tr class="selected">
+                  <td style="color: var(--text)">todo-crud</td>
+                  <td class="state-wip">wip</td>
+                  <td>2</td>
+                  <td class="branch-name">agent/todo-crud</td>
+                  <td class="token-count">9.8k</td>
+                  <td style="color: var(--dim)">implementing CRUD endpoints</td>
+                </tr>
+                <tr>
+                  <td style="color: var(--text)">rate-limiter</td>
+                  <td class="state-wip">wip</td>
+                  <td>2</td>
+                  <td class="branch-name">agent/rate-limiter</td>
+                  <td class="token-count">6.3k</td>
+                  <td style="color: var(--dim)">adding middleware</td>
+                </tr>
+                <tr>
+                  <td style="color: var(--text)">db-migrations</td>
+                  <td class="state-done">done</td>
+                  <td>1</td>
+                  <td class="branch-name">agent/db-migrations</td>
+                  <td class="token-count">8.6k</td>
+                  <td><span class="seq-msg-badge badge-purple" style="font-size:0.65rem">PR #11</span></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="monitor-hints">
+              <kbd>j</kbd>/<kbd>k</kbd> navigate &nbsp;&nbsp;
+              <kbd>d</kbd> details &nbsp;&nbsp;
+              <kbd>l</kbd> commits &nbsp;&nbsp;
+              <kbd>p</kbd> open PR &nbsp;&nbsp;
+              <kbd>m</kbd> merge &nbsp;&nbsp;
+              <kbd>r</kbd> reset &nbsp;&nbsp;
+              <kbd>q</kbd> quit
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel D: PR Result -->
+        <div class="example-panel full-width fade-in">
+          <div class="example-label">Result &mdash; 5 features, 2 waves, 5 PRs</div>
+          <div class="example-body">
+            <pre style="margin-bottom: 16px;"><span class="term-success">  5/5 features complete. 5 PRs ready for review.</span></pre>
+            <ul class="pr-list">
+              <li>
+                <span class="pr-number">#11</span>
+                <span class="pr-name">db-migrations</span>
+                <span class="pr-branch">agent/db-migrations</span>
+                <span class="pr-status pr-merged">Merged</span>
+              </li>
+              <li>
+                <span class="pr-number">#12</span>
+                <span class="pr-name">user-auth</span>
+                <span class="pr-branch">agent/user-auth</span>
+                <span class="pr-status pr-merged">Merged</span>
+              </li>
+              <li>
+                <span class="pr-number">#13</span>
+                <span class="pr-name">api-docs</span>
+                <span class="pr-branch">agent/api-docs</span>
+                <span class="pr-status pr-merged">Merged</span>
+              </li>
+              <li>
+                <span class="pr-number">#14</span>
+                <span class="pr-name">todo-crud</span>
+                <span class="pr-branch">agent/todo-crud</span>
+                <span class="pr-status pr-review">Review</span>
+              </li>
+              <li>
+                <span class="pr-number">#15</span>
+                <span class="pr-name">rate-limiter</span>
+                <span class="pr-branch">agent/rate-limiter</span>
+                <span class="pr-status pr-review">Review</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- COMPARISON -->
+  <!-- ============================================ -->
+  <section class="comparison" id="comparison">
+    <div class="container">
+      <h2 class="fade-in">A project template, not a platform.</h2>
+      <p class="comparison-subtitle fade-in">Lives in your repo. Nothing to install globally. No daemon, no desktop app.</p>
+
+      <div class="table-wrap fade-in">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="highlight">projd</th>
+              <th>Spec Kit</th>
+              <th>Agent Orchestrator</th>
+              <th>Kagan</th>
+              <th>Claude Squad</th>
+              <th>dmux</th>
+              <th>Plandex</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="row-label">Approach</td>
+              <td class="highlight">Project template</td>
+              <td>CLI toolkit</td>
+              <td>Platform</td>
+              <td>TUI daemon</td>
+              <td>Terminal mux</td>
+              <td>Terminal mux</td>
+              <td>CLI agent</td>
+            </tr>
+            <tr>
+              <td class="row-label">Parallel agents</td>
+              <td class="highlight"><span class="check">&#10003;</span> worktrees</td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="check">&#10003;</span> 30+ worktrees</td>
+              <td><span class="check">&#10003;</span> 14+ agents</td>
+              <td><span class="check">&#10003;</span> tmux</td>
+              <td><span class="check">&#10003;</span> tmux</td>
+              <td><span class="cross">&#10005;</span></td>
+            </tr>
+            <tr>
+              <td class="row-label">Feature planning</td>
+              <td class="highlight"><span class="check">&#10003;</span> JSON + criteria</td>
+              <td><span class="check">&#10003;</span> Specs</td>
+              <td><span class="check">&#10003;</span> Backlog</td>
+              <td><span class="check">&#10003;</span> Kanban</td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="partial">~</span> Plans</td>
+            </tr>
+            <tr>
+              <td class="row-label">Dependency tracking</td>
+              <td class="highlight"><span class="check">&#10003;</span> blocked_by</td>
+              <td><span class="partial">~</span> ordering</td>
+              <td><span class="check">&#10003;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+            </tr>
+            <tr>
+              <td class="row-label">Git policy enforcement</td>
+              <td class="highlight"><span class="check">&#10003;</span> PreToolUse hook</td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="partial">~</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="partial">~</span> hooks</td>
+              <td><span class="cross">&#10005;</span></td>
+            </tr>
+            <tr>
+              <td class="row-label">Session handoff</td>
+              <td class="highlight"><span class="check">&#10003;</span> HANDOFF.md</td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+            </tr>
+            <tr>
+              <td class="row-label">Quality gates</td>
+              <td class="highlight"><span class="check">&#10003;</span> smoke + hooks</td>
+              <td><span class="partial">~</span> extensions</td>
+              <td><span class="check">&#10003;</span> CI auto-fix</td>
+              <td><span class="partial">~</span> review flow</td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="partial">~</span> hooks</td>
+              <td><span class="partial">~</span> sandbox</td>
+            </tr>
+            <tr>
+              <td class="row-label">Auto PR + review</td>
+              <td class="highlight"><span class="check">&#10003;</span> + auto-merge</td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="check">&#10003;</span></td>
+              <td><span class="check">&#10003;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+              <td><span class="cross">&#10005;</span></td>
+            </tr>
+            <tr>
+              <td class="row-label">Agent support</td>
+              <td class="highlight">Claude Code</td>
+              <td>25+ agents</td>
+              <td>Multi-agent</td>
+              <td>14+ agents</td>
+              <td>Multi-agent</td>
+              <td>11+ agents</td>
+              <td>Any LLM</td>
+            </tr>
+            <tr>
+              <td class="row-label">Install model</td>
+              <td class="highlight">Clone + setup.sh</td>
+              <td>uv install</td>
+              <td>npm install</td>
+              <td>brew install</td>
+              <td>go install</td>
+              <td>go install</td>
+              <td>brew install</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="diff-cards fade-in">
+        <div class="diff-card">
+          <h3>Git enforcement at hook level</h3>
+          <p>The PreToolUse hook intercepts commands before they execute. The agent cannot bypass branch protection, push to the wrong branch, or force-push. Most orchestrators trust the agent or rely on CI after the fact.</p>
+        </div>
+        <div class="diff-card">
+          <h3>Session continuity via HANDOFF.md</h3>
+          <p>When a session ends with incomplete work, structured handoff notes preserve context for the next session. No relying on chat history or starting from scratch.</p>
+        </div>
+        <div class="diff-card">
+          <h3>Dependency-aware dispatch</h3>
+          <p>Features declare <code>blocked_by</code> dependencies explicitly. The dispatcher schedules waves and won't start a feature until its blockers are complete.</p>
+        </div>
+        <div class="diff-card">
+          <h3>Smoke tests as completion gate</h3>
+          <p>A feature is not marked complete until lint, typecheck, and tests pass. This is enforced by the skill, not left to the agent's judgment.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- QUICK START -->
+  <!-- ============================================ -->
+  <section class="quickstart" id="quickstart">
+    <div class="container">
+      <h2 class="fade-in">Get started in 60 seconds</h2>
+
+      <div class="prereqs fade-in">
+        <div class="prereq">
+          <div class="prereq-name">Claude Code</div>
+          <div class="prereq-install">claude.ai/code</div>
+        </div>
+        <div class="prereq">
+          <div class="prereq-name">Lefthook</div>
+          <div class="prereq-install">brew install lefthook</div>
+        </div>
+        <div class="prereq">
+          <div class="prereq-name">jq</div>
+          <div class="prereq-install">brew install jq</div>
+        </div>
+        <div class="prereq">
+          <div class="prereq-name">gh</div>
+          <div class="prereq-install">brew install gh</div>
+        </div>
+      </div>
+
+      <p class="quickstart-oneliner fade-in">One-line install:</p>
+      <div class="quickstart-code fade-in">
+        <code>bash &lt;(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/scripts/remote-install.sh)</code>
+      </div>
+      <p class="quickstart-note fade-in">Installs <code>/projd-create</code> and <code>/projd-adopt</code> to <code>~/.claude/skills/</code>. Skills auto-update once per day.</p>
+
+      <div class="terminal terminal-sm fade-in" id="quickstart-terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dots">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+          </div>
+          <span class="terminal-title">terminal</span>
+        </div>
+        <div class="terminal-body">
+          <pre></pre>
+        </div>
+      </div>
+
+      <div class="quickstart-links fade-in">
+        <a href="https://github.com/0x3k/projd/blob/main/docs/setup.md">Setup Guide</a>
+        <a href="https://github.com/0x3k/projd/blob/main/docs/features.md">Feature Files</a>
+        <a href="https://github.com/0x3k/projd/blob/main/docs/agent-controls.md">Agent Controls</a>
+        <a href="https://github.com/0x3k/projd/blob/main/docs/parallel-agents.md">Parallel Agents</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- FOOTER -->
+  <!-- ============================================ -->
+  <footer class="site-footer">
+    <div class="container">
+      <p class="footer-motto">A project template, not a platform.</p>
+      <div class="footer-links">
+        <a href="https://github.com/0x3k/projd">GitHub</a>
+        <a href="https://github.com/0x3k/projd/tree/main/docs">Docs</a>
+        <a href="https://github.com/0x3k/projd/blob/main/CONTRIBUTING.md">Contributing</a>
+        <a href="https://github.com/0x3k/projd/blob/main/LICENSE">MIT License</a>
+      </div>
+      <p class="footer-attr">Based on patterns from <a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective Harnesses for Long-Running Agents</a>.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/terminal.js"></script>
+  <script src="js/diagram.js"></script>
+</body>
+</html>

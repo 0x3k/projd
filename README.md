@@ -78,9 +78,20 @@ Run `./scripts/monitor.sh` in a second terminal for a live dashboard -- progress
 
 Full guide: [Setup](docs/setup.md)
 
+**One-line install** (from anywhere):
+
 ```bash
-./scripts/install-skill.sh   # install the scaffolding skills (one-time)
+bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/scripts/remote-install.sh)
 ```
+
+Or from a local clone:
+
+```bash
+./scripts/install-skill.sh
+```
+
+This installs `/projd-create` and `/projd-adopt` to `~/.claude/skills/`. Skills auto-update once per day when invoked.
+
 ```
 /projd-create                 # scaffold a new project from any Claude Code session
 /projd-adopt                  # add projd to an existing project

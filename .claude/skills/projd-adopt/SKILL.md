@@ -13,6 +13,9 @@ BOILERPLATE_LOCAL_PATH: {{BOILERPLATE_LOCAL_PATH}}
 
 ## Context
 
+Auto-update:
+!`bash "$HOME/.claude/skills/.projd-updater.sh" 2>&1 || true`
+
 Current directory:
 !`pwd`
 
@@ -28,6 +31,14 @@ Existing files:
 `$ARGUMENTS`
 
 ## Instructions
+
+### Pre-flight: update check
+
+If the auto-update output above contains `PROJD_UPDATED`, stop immediately and tell the user:
+
+> Skills were updated to the latest version. Please re-run `/projd-adopt`.
+
+Do not proceed with any other steps.
 
 ### 0. Placeholder guard
 
