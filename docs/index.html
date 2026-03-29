@@ -237,7 +237,7 @@
             <div class="wf-step">
               <div class="wf-step-marker actor-agent">A</div>
               <div class="wf-step-content">
-                <h4>agent/user-auth</h4>
+                <h4>agent/config-loader</h4>
                 <p>Isolated worktree. Implements, commits, pushes, creates PR.</p>
               </div>
             </div>
@@ -245,7 +245,7 @@
             <div class="wf-step">
               <div class="wf-step-marker actor-agent">A</div>
               <div class="wf-step-content">
-                <h4>agent/api-docs</h4>
+                <h4>agent/env-lifecycle</h4>
                 <p>Runs in parallel. No conflicts.</p>
               </div>
             </div>
@@ -256,7 +256,7 @@
             <div class="wf-step-marker actor-dispatch">D</div>
             <div class="wf-step-content">
               <h4>Blockers done. Wave 2.</h4>
-              <p><span class="seq-msg-badge badge-yellow">user-auth complete -- todo-crud unblocked</span></p>
+              <p><span class="seq-msg-badge badge-yellow">config-loader complete -- 3 features unblocked</span></p>
             </div>
           </div>
           <div class="wf-connector"></div>
@@ -266,8 +266,16 @@
             <div class="wf-step">
               <div class="wf-step-marker actor-agent">A</div>
               <div class="wf-step-content">
-                <h4>agent/todo-crud</h4>
-                <p>Starts only after its dependency is complete.</p>
+                <h4>agent/docker-backend</h4>
+                <p>Starts only after config-loader is complete.</p>
+              </div>
+            </div>
+            <div class="wf-connector"></div>
+            <div class="wf-step">
+              <div class="wf-step-marker actor-agent">A</div>
+              <div class="wf-step-content">
+                <h4>agent/template-engine + agent/shell-completions</h4>
+                <p>3 agents in parallel. Each in its own worktree.</p>
               </div>
             </div>
           </div>
@@ -276,8 +284,8 @@
           <div class="wf-step">
             <div class="wf-step-marker actor-you">Y</div>
             <div class="wf-step-content">
-              <h4>3 PRs ready for review</h4>
-              <p><span class="seq-msg-badge badge-green">3/3 features complete</span></p>
+              <h4>7 PRs ready for review</h4>
+              <p><span class="seq-msg-badge badge-green">7/7 features complete across 3 waves</span></p>
             </div>
           </div>
         </div>
@@ -363,21 +371,21 @@
 
         <!-- Panel A: Feature File -->
         <div class="example-panel fade-in">
-          <div class="example-label">Feature File &mdash; progress/user-auth.json</div>
+          <div class="example-label">Feature File &mdash; progress/docker-backend.json</div>
           <div class="example-body">
 <pre><span class="json-bracket">{</span>
-  <span class="json-key">"id"</span>: <span class="json-string">"user-auth"</span>,
-  <span class="json-key">"name"</span>: <span class="json-string">"User Authentication"</span>,
-  <span class="json-key">"description"</span>: <span class="json-string">"JWT-based login and registration."</span>,
+  <span class="json-key">"id"</span>: <span class="json-string">"docker-backend"</span>,
+  <span class="json-key">"name"</span>: <span class="json-string">"Docker Backend"</span>,
+  <span class="json-key">"description"</span>: <span class="json-string">"Docker container management for dev environments."</span>,
   <span class="json-key">"acceptance_criteria"</span>: <span class="json-bracket">[</span> <span class="callout">testable, not vague</span>
-    <span class="json-string">"POST /auth/register creates a user and returns a JWT"</span>,
-    <span class="json-string">"POST /auth/login returns JWT for valid creds, 401 for invalid"</span>,
-    <span class="json-string">"Protected routes return 401 without a valid token"</span>
+    <span class="json-string">"devenv up starts a container from the project config"</span>,
+    <span class="json-string">"devenv down stops and removes the container"</span>,
+    <span class="json-string">"devenv status shows running containers with port mappings"</span>
   <span class="json-bracket">]</span>,
-  <span class="json-key">"priority"</span>: <span class="json-number">1</span>,
+  <span class="json-key">"priority"</span>: <span class="json-number">3</span>,
   <span class="json-key">"status"</span>: <span class="json-string">"pending"</span>, <span class="callout">pending / in_progress / complete</span>
   <span class="json-key">"branch"</span>: <span class="json-string">""</span>,
-  <span class="json-key">"blocked_by"</span>: <span class="json-bracket">[]</span>, <span class="callout">dependency ordering</span>
+  <span class="json-key">"blocked_by"</span>: <span class="json-bracket">[</span><span class="json-string">"config-loader"</span><span class="json-bracket">]</span>, <span class="callout">waits for config-loader</span>
   <span class="json-key">"notes"</span>: <span class="json-string">""</span>
 <span class="json-bracket">}</span></pre>
           </div>
@@ -388,15 +396,16 @@
           <div class="example-label">Dispatch Plan &mdash; /projd-hands-off --dry-run</div>
           <div class="example-body" style="padding-bottom: 0;">
 <pre><span class="term-output">  Dispatch plan </span><span class="term-warn">(max_agents: 20)</span><span class="term-output">:</span>
-<span class="term-output">    Wave 1: </span><span class="term-highlight">user-auth, api-docs</span><span class="term-output">      (2 agents)</span>
-<span class="term-output">    Wave 2: </span><span class="term-highlight">todo-crud</span><span class="term-output">                (after user-auth)</span>
+<span class="term-output">    Wave 1: </span><span class="term-highlight">config-loader, env-lifecycle</span><span class="term-output">                        (2 agents)</span>
+<span class="term-output">    Wave 2: </span><span class="term-highlight">docker-backend, template-engine, shell-completions</span><span class="term-output">  (3 agents)</span>
+<span class="term-output">    Wave 3: </span><span class="term-highlight">port-forwarding, status-dashboard</span><span class="term-output">                  (2 agents)</span>
 </pre>
           </div>
           <div class="wave-diagram">
             <div class="wave-row">
               <span class="wave-label">wave 1</span>
-              <span class="wave-box done">user-auth</span>
-              <span class="wave-box done">api-docs</span>
+              <span class="wave-box done">config-loader</span>
+              <span class="wave-box done">env-lifecycle</span>
             </div>
             <div class="wave-row">
               <span class="wave-label"></span>
@@ -404,7 +413,18 @@
             </div>
             <div class="wave-row">
               <span class="wave-label">wave 2</span>
-              <span class="wave-box wip">todo-crud</span>
+              <span class="wave-box done">docker-backend</span>
+              <span class="wave-box done">template-engine</span>
+              <span class="wave-box done">completions</span>
+            </div>
+            <div class="wave-row">
+              <span class="wave-label"></span>
+              <span class="wave-arrow">&#8595;</span>
+            </div>
+            <div class="wave-row">
+              <span class="wave-label">wave 3</span>
+              <span class="wave-box wip">port-forwarding</span>
+              <span class="wave-box wip">status-dashboard</span>
             </div>
           </div>
         </div>
@@ -416,15 +436,15 @@
             <div class="monitor-header">
               <span id="monitor-spinner" class="spinner">&#x2808;</span>
               <strong style="color: var(--text)"> projd monitor</strong>
-              &nbsp;&nbsp;my-api &mdash; REST API with auth
+              &nbsp;&nbsp;devenv &mdash; CLI for dev environments
               &nbsp;&nbsp;<span style="color: var(--dim)">14:32:15</span>
             </div>
 
             <div class="monitor-progress">
               <span class="progress-fill" id="progress-fill">&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;&#9608;</span><span class="progress-empty">&#9617;&#9617;&#9617;&#9617;&#9617;&#9617;&#9617;&#9617;</span>
-              &nbsp;&nbsp;<span style="color: var(--green)">60%</span>
-              &nbsp;&nbsp;<span style="color: var(--dim)">3 done &nbsp;2 wip &nbsp;0 pending &nbsp;(5 total)</span>
-              &nbsp;&nbsp;<span style="color: var(--dim)">tokens: 45.2k in / 12.1k out</span>
+              &nbsp;&nbsp;<span style="color: var(--green)">57%</span>
+              &nbsp;&nbsp;<span style="color: var(--dim)">2 done &nbsp;3 wip &nbsp;2 pending &nbsp;(7 total)</span>
+              &nbsp;&nbsp;<span style="color: var(--dim)">tokens: 62.4k in / 18.7k out</span>
             </div>
 
             <table class="monitor-table">
@@ -440,44 +460,60 @@
               </thead>
               <tbody>
                 <tr>
-                  <td style="color: var(--text)">user-auth</td>
+                  <td style="color: var(--text)">config-loader</td>
                   <td class="state-done">done</td>
                   <td>1</td>
-                  <td class="branch-name">agent/user-auth</td>
-                  <td class="token-count">12.4k</td>
-                  <td><span class="seq-msg-badge badge-purple" style="font-size:0.65rem">PR #12</span></td>
+                  <td class="branch-name">agent/config-loader</td>
+                  <td class="token-count">11.2k</td>
+                  <td><span class="seq-msg-badge badge-purple" style="font-size:0.65rem">PR #4</span></td>
                 </tr>
                 <tr>
-                  <td style="color: var(--text)">api-docs</td>
+                  <td style="color: var(--text)">env-lifecycle</td>
                   <td class="state-done">done</td>
                   <td>1</td>
-                  <td class="branch-name">agent/api-docs</td>
-                  <td class="token-count">8.1k</td>
-                  <td><span class="seq-msg-badge badge-purple" style="font-size:0.65rem">PR #13</span></td>
+                  <td class="branch-name">agent/env-lifecycle</td>
+                  <td class="token-count">9.8k</td>
+                  <td><span class="seq-msg-badge badge-purple" style="font-size:0.65rem">PR #5</span></td>
                 </tr>
                 <tr class="selected">
-                  <td style="color: var(--text)">todo-crud</td>
+                  <td style="color: var(--text)">docker-backend</td>
                   <td class="state-wip">wip</td>
                   <td>2</td>
-                  <td class="branch-name">agent/todo-crud</td>
-                  <td class="token-count">9.8k</td>
-                  <td style="color: var(--dim)">implementing CRUD endpoints</td>
+                  <td class="branch-name">agent/docker-backend</td>
+                  <td class="token-count">14.1k</td>
+                  <td style="color: var(--dim)">implementing container lifecycle</td>
                 </tr>
                 <tr>
-                  <td style="color: var(--text)">rate-limiter</td>
+                  <td style="color: var(--text)">template-engine</td>
                   <td class="state-wip">wip</td>
                   <td>2</td>
-                  <td class="branch-name">agent/rate-limiter</td>
-                  <td class="token-count">6.3k</td>
-                  <td style="color: var(--dim)">adding middleware</td>
-                </tr>
-                <tr>
-                  <td style="color: var(--text)">db-migrations</td>
-                  <td class="state-done">done</td>
-                  <td>1</td>
-                  <td class="branch-name">agent/db-migrations</td>
+                  <td class="branch-name">agent/template-engine</td>
                   <td class="token-count">8.6k</td>
-                  <td><span class="seq-msg-badge badge-purple" style="font-size:0.65rem">PR #11</span></td>
+                  <td style="color: var(--dim)">parsing template variables</td>
+                </tr>
+                <tr>
+                  <td style="color: var(--text)">shell-completions</td>
+                  <td class="state-wip">wip</td>
+                  <td>2</td>
+                  <td class="branch-name">agent/shell-completions</td>
+                  <td class="token-count">6.3k</td>
+                  <td style="color: var(--dim)">generating bash completions</td>
+                </tr>
+                <tr>
+                  <td style="color: var(--text)">port-forwarding</td>
+                  <td class="state-pending">pending</td>
+                  <td>3</td>
+                  <td class="branch-name">&mdash;</td>
+                  <td class="token-count">&mdash;</td>
+                  <td style="color: var(--dim)">blocked by docker-backend</td>
+                </tr>
+                <tr>
+                  <td style="color: var(--text)">status-dashboard</td>
+                  <td class="state-pending">pending</td>
+                  <td>3</td>
+                  <td class="branch-name">&mdash;</td>
+                  <td class="token-count">&mdash;</td>
+                  <td style="color: var(--dim)">blocked by docker-backend</td>
                 </tr>
               </tbody>
             </table>
@@ -496,38 +532,50 @@
 
         <!-- Panel D: PR Result -->
         <div class="example-panel full-width fade-in">
-          <div class="example-label">Result &mdash; 5 features, 2 waves, 5 PRs</div>
+          <div class="example-label">Result &mdash; 7 features, 3 waves, 7 PRs</div>
           <div class="example-body">
-            <pre style="margin-bottom: 16px;"><span class="term-success">  5/5 features complete. 5 PRs ready for review.</span></pre>
+            <pre style="margin-bottom: 16px;"><span class="term-success">  7/7 features complete. 7 PRs ready for review.</span></pre>
             <ul class="pr-list">
               <li>
-                <span class="pr-number">#11</span>
-                <span class="pr-name">db-migrations</span>
-                <span class="pr-branch">agent/db-migrations</span>
+                <span class="pr-number">#4</span>
+                <span class="pr-name">config-loader</span>
+                <span class="pr-branch">agent/config-loader</span>
                 <span class="pr-status pr-merged">Merged</span>
               </li>
               <li>
-                <span class="pr-number">#12</span>
-                <span class="pr-name">user-auth</span>
-                <span class="pr-branch">agent/user-auth</span>
+                <span class="pr-number">#5</span>
+                <span class="pr-name">env-lifecycle</span>
+                <span class="pr-branch">agent/env-lifecycle</span>
                 <span class="pr-status pr-merged">Merged</span>
               </li>
               <li>
-                <span class="pr-number">#13</span>
-                <span class="pr-name">api-docs</span>
-                <span class="pr-branch">agent/api-docs</span>
+                <span class="pr-number">#6</span>
+                <span class="pr-name">docker-backend</span>
+                <span class="pr-branch">agent/docker-backend</span>
                 <span class="pr-status pr-merged">Merged</span>
               </li>
               <li>
-                <span class="pr-number">#14</span>
-                <span class="pr-name">todo-crud</span>
-                <span class="pr-branch">agent/todo-crud</span>
+                <span class="pr-number">#7</span>
+                <span class="pr-name">template-engine</span>
+                <span class="pr-branch">agent/template-engine</span>
+                <span class="pr-status pr-merged">Merged</span>
+              </li>
+              <li>
+                <span class="pr-number">#8</span>
+                <span class="pr-name">shell-completions</span>
+                <span class="pr-branch">agent/shell-completions</span>
+                <span class="pr-status pr-merged">Merged</span>
+              </li>
+              <li>
+                <span class="pr-number">#9</span>
+                <span class="pr-name">port-forwarding</span>
+                <span class="pr-branch">agent/port-forwarding</span>
                 <span class="pr-status pr-review">Review</span>
               </li>
               <li>
-                <span class="pr-number">#15</span>
-                <span class="pr-name">rate-limiter</span>
-                <span class="pr-branch">agent/rate-limiter</span>
+                <span class="pr-number">#10</span>
+                <span class="pr-name">status-dashboard</span>
+                <span class="pr-branch">agent/status-dashboard</span>
                 <span class="pr-status pr-review">Review</span>
               </li>
             </ul>
@@ -683,6 +731,36 @@
           <p>A feature is not marked complete until lint, typecheck, and tests pass. This is enforced by the skill, not left to the agent's judgment.</p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ============================================ -->
+  <!-- WHEN TO USE -->
+  <!-- ============================================ -->
+  <section class="use-cases" id="use-cases">
+    <div class="container">
+      <h2 class="fade-in">When to use projd</h2>
+
+      <div class="use-case-grid fade-in">
+        <div class="feature-card">
+          <h3>Greenfield build from a spec</h3>
+          <p>You have requirements. projd decomposes them into features, builds them in parallel, and you review PRs. A weekend project that would take a week of sequential sessions.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Adding a major capability</h3>
+          <p><code>/projd-adopt</code> + <code>/projd-plan</code>. The dependency graph ensures new features build on each other correctly. Smoke tests gate completion so agents can't break what already works.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Batch of independent improvements</h3>
+          <p>8 features on your backlog, none depend on each other. <code>/projd-hands-off</code> builds all 8 in parallel. You merge the PRs.</p>
+        </div>
+        <div class="feature-card">
+          <h3>Multi-service monorepo</h3>
+          <p><code>projects.json</code> gives each service its own progress tracker. Agents work across services in parallel without conflicts.</p>
+        </div>
+      </div>
+
+      <p class="use-case-caveat fade-in">projd is overkill for single-feature bug fixes, quick scripts, or exploratory sessions. Just use Claude Code directly for those.</p>
     </div>
   </section>
 
