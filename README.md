@@ -27,7 +27,7 @@ projd adds the missing pieces: session continuity, git guardrails, a feature lif
   Up to 20 agents in dependency-aware waves, with optional auto-review.
 
 - **Session continuity**
-  Structured `HANDOFF.md` preserves context between sessions.
+  Structured `.projd/HANDOFF.md` preserves context between sessions.
 
 - **Smoke-test gates**
   Features aren't marked complete until lint, typecheck, and tests pass.
@@ -231,7 +231,7 @@ you review   reviewer agent
 
 Set `"auto_review": true` in `.projd/agent.json` to enable vibes mode. The reviewer runs smoke tests, verifies acceptance criteria, and merges passing PRs. If it finds issues, it fixes trivial ones inline and spawns a subagent for larger fixes. PRs that still fail after fixes are flagged for manual review.
 
-Each agent reads `HANDOFF.md` for prior context, implements against acceptance criteria, runs smoke tests, and creates a PR. `/projd-plan` again when new work comes in.
+Each agent reads `.projd/HANDOFF.md` for prior context, implements against acceptance criteria, runs smoke tests, and creates a PR. `/projd-plan` again when new work comes in.
 
 <details>
 <summary><strong>Docs</strong></summary>
@@ -324,7 +324,7 @@ What projd does that most alternatives don't:
 | Capability | How |
 |------------|-----|
 | **Git policy enforcement** | PreToolUse hook intercepts commands before they execute -- the agent cannot bypass branch protection |
-| **Session continuity** | Structured `HANDOFF.md` preserves context between sessions instead of relying on chat history |
+| **Session continuity** | Structured `.projd/HANDOFF.md` preserves context between sessions instead of relying on chat history |
 | **Dependency-aware dispatch** | Features declare `blocked_by` dependencies; the dispatcher schedules waves and won't start blocked work |
 | **Smoke-test gates** | A feature isn't complete until lint, typecheck, and tests pass -- enforced by the skill, not judgment |
 

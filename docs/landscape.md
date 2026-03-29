@@ -11,7 +11,7 @@ This space is moving fast. Here's how projd compares to other open-source tools 
 | **Feature planning** | JSON files with acceptance criteria | Specs + plans + task breakdown | Backlog management | Kanban board | Kanban + issue tracker sync | No | No | Plan versioning | No |
 | **Dependency tracking** | `blocked_by` fields | Task ordering | Yes | No | No | No | No | No | No |
 | **Git policy enforcement** | PreToolUse hook + Lefthook | No | Partial | No | No | No | Pre/post-merge hooks | No | No |
-| **Session handoff** | `HANDOFF.md` between sessions | No | No | No | No | No | No | No | No |
+| **Session handoff** | `.projd/HANDOFF.md` between sessions | No | No | No | No | No | No | No | No |
 | **Quality gates** | Smoke tests + pre-commit hooks | Extension-based (Verify, Review) | CI auto-fix | Code review flow | No | No | Hook support | Diff sandbox | No |
 | **Auto PR creation** | Yes (+ optional auto-review/merge) | No | Yes | Yes | No | No | No | No | No |
 | **Agent support** | Claude Code | 25+ agents | Claude Code, Codex, Aider, etc. | 14+ agents | 18+ agents | Claude Code, Codex, Aider, etc. | 11+ agents | Any LLM | Claude Code only |
@@ -25,7 +25,7 @@ This space is moving fast. Here's how projd compares to other open-source tools 
 What projd does that most alternatives don't:
 
 - **Git policy enforcement at the hook level.** The PreToolUse hook intercepts commands before they execute. The agent cannot bypass branch protection, push to the wrong branch, or force-push. Most orchestrators trust the agent or rely on CI after the fact.
-- **Session continuity via `HANDOFF.md`.** When a session ends with incomplete work, structured handoff notes preserve context for the next session. Most tools assume continuous operation or rely on chat history.
+- **Session continuity via `.projd/HANDOFF.md`.** When a session ends with incomplete work, structured handoff notes preserve context for the next session. Most tools assume continuous operation or rely on chat history.
 - **Feature files with `blocked_by` dependencies.** Features declare their dependencies explicitly. The dispatcher won't start a feature until its blockers are complete. This prevents out-of-order execution in parallel runs.
 - **Smoke tests as a completion gate.** A feature isn't marked complete until lint, typecheck, and tests pass. This is enforced by the skill, not left to the agent's judgment.
 

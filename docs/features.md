@@ -31,10 +31,10 @@ Each feature is a JSON file in `.projd/progress/`. The filename should match the
 
 ## Session continuity
 
-Long-running work often spans multiple sessions. projd handles this through `HANDOFF.md`:
+Long-running work often spans multiple sessions. projd handles this through `.projd/HANDOFF.md`:
 
-- When a session ends with incomplete work, `projd-end` writes a `HANDOFF.md` to the project root with what was accomplished, current state, and prioritized next steps.
-- When the next session starts, `projd-start` reads `HANDOFF.md` and orients the agent with full context from where the previous session left off.
-- When a feature is completed, `HANDOFF.md` is deleted -- there's nothing to hand off.
+- When a session ends with incomplete work, `projd-end` writes `.projd/HANDOFF.md` with what was accomplished, current state, and prioritized next steps.
+- When the next session starts, `projd-start` reads `.projd/HANDOFF.md` and orients the agent with full context from where the previous session left off.
+- When a feature is completed, `.projd/HANDOFF.md` is deleted -- there's nothing to hand off.
 
-`HANDOFF.md` is ephemeral (listed in `.gitignore`). It exists only between sessions and is never committed.
+`.projd/HANDOFF.md` is ephemeral (listed in `.gitignore`). It exists only between sessions and is never committed.

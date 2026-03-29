@@ -73,7 +73,7 @@ Each agent prompt must include:
   4. Run `./.projd/scripts/smoke.sh` to verify
   5. Commit all changes with descriptive messages
   6. If smoke passes and all criteria met: set `status: "complete"`, push branch, create PR via `gh pr create`
-  7. If incomplete: set notes with progress, write HANDOFF.md
+  7. If incomplete: set notes with progress, write .projd/HANDOFF.md
 - Key conventions from CLAUDE.md (code style, test patterns)
 
 If more eligible features than `max_agents`, dispatch in waves -- wait for the current batch to finish before starting the next.

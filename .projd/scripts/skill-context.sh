@@ -62,10 +62,10 @@ case "$cmd" in
         git diff --stat 2>/dev/null
         ;;
     handoff)
-        if [ -f HANDOFF.md ]; then
-            cat HANDOFF.md
+        if [ -f .projd/HANDOFF.md ]; then
+            cat .projd/HANDOFF.md
         else
-            echo "No HANDOFF.md -- clean start."
+            echo "No .projd/HANDOFF.md -- clean start."
         fi
         ;;
     status)

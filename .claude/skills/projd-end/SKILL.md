@@ -81,13 +81,13 @@ If `gh` is not available: push the branch only, skip PR creation, warn about mis
 ### Step 6: Handoff
 
 If feature is incomplete:
-- Create or overwrite `HANDOFF.md` with:
+- Create or overwrite `.projd/HANDOFF.md` with:
   - What was done this session
   - Current state (what works, what is broken)
   - Prioritized next steps
 
 If feature is complete:
-- Delete `HANDOFF.md` if it exists.
+- Delete `.projd/HANDOFF.md` if it exists.
 
 ## Edge Cases
 
@@ -102,4 +102,4 @@ If complete:
 
 If incomplete:
 
-> Session wrapped. HANDOFF.md written for next session.
+> Session wrapped. .projd/HANDOFF.md written for next session.
