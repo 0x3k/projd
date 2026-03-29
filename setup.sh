@@ -211,10 +211,10 @@ done
 echo "[ok] Generated upgrade manifest (.projd/manifest)"
 
 # --- Remove template files ---
-rm -f README.md LICENSE scripts/install-skill.sh
-rm -rf .claude/skills/projd-create .claude/skills/projd-adopt
+rm -f README.md LICENSE scripts/install-skill.sh scripts/remote-install.sh package.json
+rm -rf .claude/skills/projd-create .claude/skills/projd-adopt bin
 rm -- "$0"
-echo "[ok] Removed template files (README.md, LICENSE, install-skill.sh, projd-create/adopt skills, setup.sh)"
+echo "[ok] Removed template files (README.md, LICENSE, install-skill.sh, remote-install.sh, package.json, bin/, projd-create/adopt skills, setup.sh)"
 
 # --- Create project README ---
 cat > README.md << READMEEOF

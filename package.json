@@ -1,0 +1,30 @@
+{
+  "name": "@0x3k/projd",
+  "version": "0.1.1",
+  "description": "Project harness for long-running and parallel AI agent sessions with Claude Code",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0x3k/projd.git"
+  },
+  "bin": {
+    "projd": "bin/projd.js"
+  },
+  "files": [
+    "bin/",
+    ".claude/skills/projd-create/SKILL.md",
+    ".claude/skills/projd-adopt/SKILL.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "type": "module",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai",
+    "agent",
+    "project-management",
+    "parallel-agents"
+  ]
+}

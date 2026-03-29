@@ -1,5 +1,6 @@
 # projd
 
+[![npm version](https://img.shields.io/npm/v/@0x3k/projd)](https://www.npmjs.com/package/@0x3k/projd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Built for Claude Code](https://img.shields.io/badge/Built_for-Claude_Code-6B5CE7)](https://claude.ai/code)
 
@@ -78,13 +79,21 @@ Run `./scripts/monitor.sh` in a second terminal for a live dashboard -- progress
 
 Full guide: [Setup](docs/setup.md)
 
-**One-line install** (from anywhere):
+**Install with npm/pnpm** (from anywhere):
+
+```bash
+npx @0x3k/projd
+# or
+pnpm dlx @0x3k/projd
+```
+
+**Or with curl** (from anywhere):
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/scripts/remote-install.sh)
 ```
 
-Or from a local clone:
+**Or from a local clone:**
 
 ```bash
 ./scripts/install-skill.sh
