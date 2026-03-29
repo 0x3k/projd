@@ -1,5 +1,6 @@
 # projd
 
+[![npm version](https://img.shields.io/npm/v/@0x3k/projd)](https://www.npmjs.com/package/@0x3k/projd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Built for Claude Code](https://img.shields.io/badge/Built_for-Claude_Code-6B5CE7)](https://claude.ai/code)
 
