@@ -16,7 +16,7 @@ set -euo pipefail
 # and setup comments.
 #
 # Usage:
-#   ./scripts/activate-langs.sh <file> <lang1> [lang2 ...]
+#   ./.projd/scripts/activate-langs.sh <file> <lang1> [lang2 ...]
 
 if [ $# -lt 2 ]; then
     echo "Usage: $0 <file> <lang1> [lang2 ...]"

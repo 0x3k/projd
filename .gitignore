@@ -40,6 +40,7 @@ HANDOFF.md
 # Claude Code local overrides
 .claude/settings.local.json
 
-# projd upgrade state (local, not committed)
-.projd/*
-!.projd/template-files.txt
+# projd ephemeral state
+.projd/manifest
+.projd/mode
+.projd/source

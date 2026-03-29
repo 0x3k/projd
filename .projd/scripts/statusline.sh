@@ -10,7 +10,7 @@ set -euo pipefail
 #   Opus 4.6  main  42%  |  3/7  2 wip  |  2 agents  |  15.2k/4.8k tok  +156/-23  12m
 #
 # Installed via settings.json:
-#   "statusLine": { "type": "command", "command": "scripts/statusline.sh" }
+#   "statusLine": { "type": "command", "command": ".projd/scripts/statusline.sh" }
 
 input=$(cat)
 
@@ -54,7 +54,7 @@ pending_n=0
 total=0
 
 shopt -s nullglob
-for f in progress/*.json; do
+for f in .projd/progress/*.json; do
     [ -f "$f" ] || continue
     total=$((total + 1))
     s=$(jq -r '.status // "pending"' "$f" 2>/dev/null)

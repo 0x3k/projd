@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# check-git-policy.sh -- PreToolUse hook that enforces agent.json git policies.
+# check-git-policy.sh -- PreToolUse hook that enforces .projd/agent.json git policies.
 #
 # Receives JSON on stdin from Claude Code with tool_input.command.
 # Exits 0 with JSON deny decision to block, or exits 0 silently to allow.
@@ -17,8 +17,8 @@ fi
 
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 
-# Load agent.json from project directory
-AGENT_JSON="${CWD}/agent.json"
+# Load .projd/agent.json from project directory
+AGENT_JSON="${CWD}/.projd/agent.json"
 if [ ! -f "$AGENT_JSON" ]; then
     exit 0
 fi
@@ -61,7 +61,7 @@ is_protected() {
 # --- Check a: Force push ---
 if echo "$COMMAND" | grep -qE 'git\s+push\s.*(-[a-zA-Z]*f\b|--force\b)'; then
     if [ "$ALLOW_FORCE_PUSH" != "true" ]; then
-        deny "Force push blocked by agent.json (allow_force_push: false)."
+        deny "Force push blocked by .projd/agent.json (allow_force_push: false)."
     fi
 fi
 
@@ -69,7 +69,7 @@ fi
 if echo "$COMMAND" | grep -qE 'git\s+push'; then
     case "$ALLOW_PUSH" in
         false)
-            deny "Push blocked by agent.json (allow_push: false). The operator handles pushing."
+            deny "Push blocked by .projd/agent.json (allow_push: false). The operator handles pushing."
             ;;
         feature)
             # Get the current branch
@@ -104,7 +104,7 @@ if echo "$COMMAND" | grep -qE 'git\s+push'; then
             ;;
         *)
             # Unknown value, treat as false
-            deny "Push blocked by agent.json (allow_push has unknown value: '$ALLOW_PUSH')."
+            deny "Push blocked by .projd/agent.json (allow_push has unknown value: '$ALLOW_PUSH')."
             ;;
     esac
 fi

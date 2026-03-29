@@ -72,14 +72,14 @@ fi
 # --- Sub-projects ---
 if [ -f projects.json ]; then
     for dir in $(jq -r '.projects[].path' projects.json); do
-        if [ -x "$dir/scripts/init.sh" ]; then
+        if [ -x "$dir/.projd/scripts/init.sh" ]; then
             echo ""
             echo "=== Initializing $dir ==="
-            (cd "$dir" && ./scripts/init.sh)
+            (cd "$dir" && ./.projd/scripts/init.sh)
         fi
     done
 fi
 
 echo ""
 echo "=== Init complete ==="
-echo "Run ./scripts/smoke.sh to verify everything works."
+echo "Run ./.projd/scripts/smoke.sh to verify everything works."

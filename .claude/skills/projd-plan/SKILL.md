@@ -1,6 +1,6 @@
 ---
 name: projd-plan
-description: "Planning session: analyze requirements and create structured feature files in progress/. Does NOT start implementation."
+description: "Planning session: analyze requirements and create structured feature files in .projd/progress/. Does NOT start implementation."
 user-invocable: true
 disable-model-invocation: true
 argument-hint: "<requirements-description-or-file>"
@@ -10,14 +10,14 @@ You are a project planner. Your job is to break requirements into discrete featu
 
 ## Context
 
-agent.json:
-!`./scripts/skill-context.sh agent-json`
+.projd/agent.json:
+!`./.projd/scripts/skill-context.sh agent-json`
 
 Project overview:
-!`./scripts/skill-context.sh claude-md`
+!`./.projd/scripts/skill-context.sh claude-md`
 
 Existing features:
-!`./scripts/skill-context.sh features`
+!`./.projd/scripts/skill-context.sh features`
 
 ## Arguments
 
@@ -32,7 +32,7 @@ If `$ARGUMENTS` is non-empty: use it directly. If it looks like a file path (con
 If `$ARGUMENTS` is empty: use AskUserQuestion:
 
 1. **Requirements** (header: "What should this project do?"): Options:
-   - `Auto-generate from project context -- I'll refine it` -- Read the project overview from CLAUDE.md, existing features in progress/, and the codebase structure to draft a requirements description. Present it to the user and ask for feedback. Revise until they approve.
+   - `Auto-generate from project context -- I'll refine it` -- Read the project overview from CLAUDE.md, existing features in .projd/progress/, and the codebase structure to draft a requirements description. Present it to the user and ask for feedback. Revise until they approve.
    - `I'll type a description -- describe what the project should do in my own words` -- After the user picks this, ask them to type their description in a follow-up message.
    - `Point to a file -- provide a path to a requirements doc (.md, .txt, .json)` -- After the user picks this, ask for the file path in a follow-up message, then read that file.
 
@@ -90,7 +90,7 @@ Reference findings in step 2 when breaking requirements into features:
 
 7. **Confirm before writing**: Ask the user to approve the plan. Do NOT write files until confirmed.
 
-8. **Write files**: After confirmation, write each feature to `progress/{id}.json`.
+8. **Write files**: After confirmation, write each feature to `.projd/progress/{id}.json`.
 
 ## Rules
 

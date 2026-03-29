@@ -8,16 +8,16 @@ set -euo pipefail
 # from compound expressions in !` ` blocks.
 #
 # Usage:
-#   ./scripts/skill-context.sh features
-#   ./scripts/skill-context.sh agent-json
-#   ./scripts/skill-context.sh claude-md
-#   ./scripts/skill-context.sh branch
-#   ./scripts/skill-context.sh git-status
-#   ./scripts/skill-context.sh git-diff-stat
-#   ./scripts/skill-context.sh handoff
-#   ./scripts/skill-context.sh status
-#   ./scripts/skill-context.sh smoke
-#   ./scripts/skill-context.sh gh-auth
+#   ./.projd/scripts/skill-context.sh features
+#   ./.projd/scripts/skill-context.sh agent-json
+#   ./.projd/scripts/skill-context.sh claude-md
+#   ./.projd/scripts/skill-context.sh branch
+#   ./.projd/scripts/skill-context.sh git-status
+#   ./.projd/scripts/skill-context.sh git-diff-stat
+#   ./.projd/scripts/skill-context.sh handoff
+#   ./.projd/scripts/skill-context.sh status
+#   ./.projd/scripts/skill-context.sh smoke
+#   ./.projd/scripts/skill-context.sh gh-auth
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 cd "$PROJECT_DIR"
@@ -28,7 +28,7 @@ case "$cmd" in
     features)
         shopt -s nullglob
         found=false
-        for f in progress/*.json; do
+        for f in .projd/progress/*.json; do
             if [ -f "$f" ]; then
                 found=true
                 jq -c '{id, name, status, priority, blocked_by, branch}' "$f" 2>/dev/null || true
@@ -39,8 +39,8 @@ case "$cmd" in
         fi
         ;;
     agent-json)
-        if [ -f agent.json ]; then
-            cat agent.json
+        if [ -f .projd/agent.json ]; then
+            cat .projd/agent.json
         else
             echo "not found"
         fi
@@ -69,19 +69,19 @@ case "$cmd" in
         fi
         ;;
     status)
-        if [ -x scripts/status.sh ]; then
-            ./scripts/status.sh 2>&1 || echo "status.sh failed"
+        if [ -x .projd/scripts/status.sh ]; then
+            ./.projd/scripts/status.sh 2>&1 || echo "status.sh failed"
         else
-            echo "scripts/status.sh not found"
+            echo ".projd/scripts/status.sh not found"
         fi
         ;;
     smoke)
-        if [ -x scripts/smoke.sh ]; then
+        if [ -x .projd/scripts/smoke.sh ]; then
             rc=0
-            ./scripts/smoke.sh 2>&1 || rc=$?
+            ./.projd/scripts/smoke.sh 2>&1 || rc=$?
             echo "EXIT_CODE=$rc"
         else
-            echo "scripts/smoke.sh not found"
+            echo ".projd/scripts/smoke.sh not found"
         fi
         ;;
     token-usage)
@@ -119,6 +119,13 @@ case "$cmd" in
         }
         echo "$(fmt "$tin") input, $(fmt "$tout") output ($(fmt "$total") total, $(fmt "$tcache") cache read)"
         ;;
+    mode)
+        if [ -f .projd/mode ]; then
+            cat .projd/mode
+        else
+            echo "team"
+        fi
+        ;;
     gh-auth)
         gh auth status 2>&1 || echo "gh: not available or not authenticated"
         ;;
@@ -127,7 +134,7 @@ case "$cmd" in
         echo ""
         echo "Subcommands: features agent-json claude-md branch git-status"
         echo "             git-diff-stat handoff status smoke gh-auth"
-        echo "             token-usage"
+        echo "             token-usage mode"
         ;;
     *)
         echo "Unknown subcommand: $cmd"

@@ -23,8 +23,8 @@ GitHub CLI:
 !`gh auth status 2>&1 || echo "NOT_AUTHENTICATED"`
 
 Existing files:
-!`ls -la CLAUDE.md agent.json lefthook.yml .claude/settings.json 2>/dev/null || echo "(none found)"`
-!`ls -d .projd progress scripts .claude/hooks .claude/skills 2>/dev/null || echo "(no projd dirs)"`
+!`ls -la CLAUDE.md .projd/agent.json lefthook.yml .claude/settings.json 2>/dev/null || echo "(none found)"`
+!`ls -d .projd .projd/progress .projd/scripts .claude/hooks .claude/skills 2>/dev/null || echo "(no projd dirs)"`
 
 ## Arguments
 
@@ -53,8 +53,8 @@ Do not proceed.
 Run these checks. Stop on any failure.
 
 1. **Git repo**: Run `git rev-parse --is-inside-work-tree`. If not a git repo, stop and suggest `git init`.
-2. **Not already projd**: Check for `.projd/` directory. If it exists, stop and tell the user to use `./scripts/upgrade.sh` instead.
-3. **Not already adopted**: Check if `CLAUDE.md` contains `<!-- projd:begin -->`. If found, stop -- projd sections are already present.
+2. **Not already projd**: Check for `.projd/` directory. If it exists, stop and tell the user to use `./.projd/scripts/upgrade.sh` instead.
+3. **Not already adopted**: Check for `.claude/CLAUDE.md`. If it exists and contains `## Agent Controls`, stop -- projd is already adopted. Also check if `CLAUDE.md` contains `<!-- projd:begin -->` (legacy sentinel format) -- if found, stop and suggest running `./.projd/scripts/upgrade.sh` to migrate.
 
 Remember the `gh auth status` result from the Context section above for later steps.
 
@@ -87,6 +87,7 @@ Then use a single AskUserQuestion call with these questions:
 1. **Language** (header: "Language", multiSelect: true): Options: `Go`, `TypeScript`, `Python`, `None -- skip language hooks`. Pre-select detected languages by listing them first with "(detected)" in the label. The user picks "Other" to type a different language.
 2. **Branch prefix** (header: "Prefix"): "Branch prefix for agent work?" Options: `agent/ (Recommended)`, `feature/`, `claude/`. The user picks "Other" to type their own.
 3. **Push policy** (header: "Push"): "Push policy?" Options: `Feature branches only (Recommended)`, `All branches`, `No pushing -- local only`.
+4. **Mode** (header: "Mode"): "How should projd files be managed?" Options: `Team -- committed to git (Recommended)`, `Solo -- gitignored, only you see them`.
 
 **Step 2c -- Vibes path (if "Vibes" was chosen):**
 
@@ -94,6 +95,7 @@ Auto-detect language from project files (same detection as 2b). Use defaults:
 - Branch prefix: `agent/`
 - Push policy: `feature` (if `gh` is authenticated), `false` (if not)
 - Auto-review: `true` (if `gh` is authenticated), `false` (if not)
+- Mode: `solo`
 
 Show a one-line summary of choices and ask the user to confirm before proceeding.
 
@@ -119,6 +121,7 @@ If both fail, report and stop.
 These are the template-managed files that will be copied:
 
 ```
+.claude/CLAUDE.md
 .claude/hooks/check-git-policy.sh
 .claude/hooks/check-path-guard.sh
 .claude/skills/projd-start/SKILL.md
@@ -126,15 +129,16 @@ These are the template-managed files that will be copied:
 .claude/skills/projd-plan/SKILL.md
 .claude/skills/projd-hands-on/SKILL.md
 .claude/skills/projd-hands-off/SKILL.md
-scripts/init.sh
-scripts/monitor.sh
-scripts/skill-context.sh
-scripts/smoke.sh
-scripts/status.sh
-scripts/statusline.sh
-scripts/validate.sh
-scripts/upgrade.sh
-scripts/activate-langs.sh
+.projd/scripts/init.sh
+.projd/scripts/monitor.sh
+.projd/scripts/skill-context.sh
+.projd/scripts/smoke.sh
+.projd/scripts/status.sh
+.projd/scripts/statusline.sh
+.projd/scripts/validate.sh
+.projd/scripts/upgrade.sh
+.projd/scripts/activate-langs.sh
+.projd/agent.json
 lefthook.yml
 ```
 
@@ -158,7 +162,7 @@ For each template file listed in step 4:
 After copying, set executable permissions:
 
 ```bash
-chmod +x scripts/*.sh .claude/hooks/*.sh
+chmod +x .projd/scripts/*.sh .claude/hooks/*.sh
 ```
 
 ### 6. Activate language blocks
@@ -166,9 +170,9 @@ chmod +x scripts/*.sh .claude/hooks/*.sh
 If the user selected languages that have built-in template support (typescript, go, python, swift, kotlin), run the activation script on each file that has language blocks:
 
 ```bash
-./scripts/activate-langs.sh scripts/smoke.sh <lang1> <lang2> ...
-./scripts/activate-langs.sh scripts/init.sh <lang1> <lang2> ...
-./scripts/activate-langs.sh lefthook.yml <lang1> <lang2> ...
+./.projd/scripts/activate-langs.sh .projd/scripts/smoke.sh <lang1> <lang2> ...
+./.projd/scripts/activate-langs.sh .projd/scripts/init.sh <lang1> <lang2> ...
+./.projd/scripts/activate-langs.sh lefthook.yml <lang1> <lang2> ...
 ```
 
 If any selected languages do NOT have built-in template blocks (not in: typescript, go, python, swift, kotlin), manually add equivalent content following the same approach as projd-create step 6b:
@@ -180,12 +184,12 @@ If any selected languages do NOT have built-in template blocks (not in: typescri
       run: <lint/format command> {staged_files}
 ```
 
-**`scripts/smoke.sh`** -- add `run_check` lines after `# --- Local checks ---`:
+**`.projd/scripts/smoke.sh`** -- add `run_check` lines after `# --- Local checks ---`:
 ```bash
 run_check "<name>" <command>
 ```
 
-**`scripts/init.sh`** -- add dependency install lines after `# --- Dependencies ---`:
+**`.projd/scripts/init.sh`** -- add dependency install lines after `# --- Dependencies ---`:
 ```bash
 if [ -f <manifest-file> ]; then
     <install command>
@@ -195,9 +199,13 @@ fi
 
 If the user chose "None -- skip language hooks", skip this entire step.
 
-### 7. Merge .claude/settings.json
+### 7. Merge Claude Code settings
 
-Read the existing `.claude/settings.json` if it exists. If it does not exist, start with an empty `{}`.
+Determine the target settings file based on the mode chosen in step 2:
+- **Team mode**: `.claude/settings.json`
+- **Solo mode**: `.claude/settings.local.json`
+
+Read the target file if it exists. If it does not exist, start with an empty `{}`.
 
 **Base mode (Developer):**
 
@@ -205,7 +213,7 @@ Merge these entries:
 
 - Add to `permissions.allow` (deduplicate -- do not add entries that already exist):
   ```json
-  "Bash(./scripts/skill-context.sh:*)",
+  "Bash(./.projd/scripts/skill-context.sh:*)",
   "Bash(git *)"
   ```
 
@@ -213,7 +221,7 @@ Merge these entries:
   ```json
   "statusLine": {
     "type": "command",
-    "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/statusline.sh"
+    "command": "\"$CLAUDE_PROJECT_DIR\"/.projd/scripts/statusline.sh"
   }
   ```
   If a `statusLine` already exists, use AskUserQuestion to ask:
@@ -239,7 +247,7 @@ Replace `permissions.allow` with the expanded list:
 
 ```json
 [
-  "Bash(./scripts/*)",
+  "Bash(./.projd/scripts/*)",
   "Bash(git *)",
   "Bash(grep *)",
   "Bash(rg *)",
@@ -326,11 +334,11 @@ Set `hooks.PreToolUse` to include both hooks with the path guard:
 
 If existing `hooks.PreToolUse` entries exist that are NOT projd hooks, preserve them (append projd entries to the array).
 
-Write the merged result back to `.claude/settings.json`.
+Write the merged result back to the target settings file (`.claude/settings.json` for team mode, `.claude/settings.local.json` for solo mode).
 
-### 8. Create agent.json
+### 8. Create .projd/agent.json
 
-Build `agent.json` from interview answers:
+Build `.projd/agent.json` from interview answers:
 
 ```json
 {
@@ -353,55 +361,41 @@ Map push policy answers:
 - "All branches" -> `true`
 - "No pushing -- local only" -> `false`
 
-If `agent.json` already exists, read it and warn the user: "An agent.json already exists. It will be overwritten with your new settings." Then write the new file. The old values are not merged -- the user just configured fresh values in the interview.
+If `.projd/agent.json` already exists, read it and warn the user: "A .projd/agent.json already exists. It will be overwritten with your new settings." Then write the new file. The old values are not merged -- the user just configured fresh values in the interview.
 
-### 9. Update CLAUDE.md
+### 9. Write .claude/CLAUDE.md
 
-Read the existing `CLAUDE.md`. If it does not exist, create an empty one.
-
-Append the projd sections at the end of the file, wrapped in sentinel comments. The content between the sentinels is the standard projd workflow documentation.
-
-Use the Edit tool to append this block at the very end of the file:
-
-```markdown
-
-<!-- projd:begin -->
-<!-- projd workflow sections -- do not edit between these markers -->
-
-## Agent Controls
-
-Read `agent.json` before any git operation. It defines what you are allowed to do:
-
-[... full Agent Controls section from template CLAUDE.md ...]
-
-## Session Conventions
-
-[... full Session Conventions section with all subsections ...]
-
-## Sub-Projects
-
-[... full Sub-Projects section ...]
-
-## Pre-Commit Quality Gates
-
-[... full Pre-Commit Quality Gates section ...]
-
-## Code Conventions
-
-- Never use emojis in code or comments
-- Use `git -C <path>` instead of `cd <path> && git` when running git commands in another directory. This avoids compound shell commands and matches the `Bash(git *)` auto-approve rule.
-
-<!-- projd:end -->
-```
-
-To get the exact content: read the template CLAUDE.md from the temp clone directory. Extract everything from `## Agent Controls` to the end of the file. Wrap it with the sentinel comments and append to the existing CLAUDE.md.
-
-**Important**: Read the template CLAUDE.md from the temp clone (not the project's existing CLAUDE.md) to get the canonical projd sections.
-
-### 10. Create directories and metadata
+Copy `.claude/CLAUDE.md` from the temp clone directory to the project. This file contains the projd workflow instructions (Agent Controls, Session Conventions, etc.) and is auto-loaded by Claude Code alongside the root `CLAUDE.md`.
 
 ```bash
-mkdir -p progress .projd
+cp "$TEMP_DIR/.claude/CLAUDE.md" .claude/CLAUDE.md
+```
+
+Do NOT modify the user's existing root `CLAUDE.md`. The projd workflow now lives in `.claude/CLAUDE.md` as a separate file.
+
+**Important**: Read `.claude/CLAUDE.md` from the temp clone (not the root CLAUDE.md) to get the canonical projd sections.
+
+### 10. Create directories, metadata, and mode
+
+```bash
+mkdir -p .projd/progress
+```
+
+Write the mode:
+
+```bash
+echo "<mode>" > .projd/mode
+```
+
+If **solo mode**, append projd entries to `.gitignore`:
+
+```gitignore
+# projd infrastructure (solo mode)
+.projd/
+.claude/CLAUDE.md
+.claude/hooks/
+.claude/skills/
+lefthook.yml
 ```
 
 Generate `.projd/manifest` with SHA256 checksums of all copied template files:
@@ -423,13 +417,13 @@ Write `.projd/source` with the BOILERPLATE_REMOTE_URL.
 Run the initialization script to install Lefthook and set up the development environment:
 
 ```bash
-./scripts/init.sh
+./.projd/scripts/init.sh
 ```
 
-Then run validation (allow it to fail -- warnings about missing features in `progress/` are expected):
+Then run validation (allow it to fail -- warnings about missing features in `.projd/progress/` are expected):
 
 ```bash
-./scripts/validate.sh || true
+./.projd/scripts/validate.sh || true
 ```
 
 Report any warnings or failures to the user.
@@ -451,8 +445,9 @@ Installed:
   Skills:  projd-start, projd-end, projd-plan, projd-hands-on, projd-hands-off
   Hooks:   check-git-policy.sh [+ check-path-guard.sh if vibes]
   Scripts: init, smoke, validate, status, statusline, upgrade, skill-context, monitor, activate-langs
-  Config:  agent.json, lefthook.yml, .claude/settings.json (merged)
-  CLAUDE.md updated with projd workflow sections
+  Config:  .projd/agent.json, lefthook.yml, settings (merged into <settings file>)
+  .claude/CLAUDE.md created (projd workflow instructions)
+  Mode:    <team|solo>
 
 Next steps:
   1. Review the changes: git diff
@@ -469,5 +464,5 @@ If there were skipped files (from conflict resolution), list them and suggest th
 - Never modify the user's existing source code, tests, or non-configuration files.
 - Never create a commit. The user decides when to commit the infrastructure changes.
 - Never use emojis in output or generated content.
-- When merging settings.json, preserve all existing entries. Only add, never remove.
-- When updating CLAUDE.md, only append -- never modify or remove existing content.
+- When merging settings, preserve all existing entries. Only add, never remove.
+- Write `.claude/CLAUDE.md` as a separate file. Do not modify the user's root `CLAUDE.md`.

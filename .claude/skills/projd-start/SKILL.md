@@ -9,18 +9,18 @@ You are an agent starting a work session. Orient yourself before doing any imple
 ## Context
 
 Project status:
-!`./scripts/skill-context.sh status`
+!`./.projd/scripts/skill-context.sh status`
 
 Handoff from previous session:
-!`./scripts/skill-context.sh handoff`
+!`./.projd/scripts/skill-context.sh handoff`
 
 Smoke test:
-!`./scripts/skill-context.sh smoke`
+!`./.projd/scripts/skill-context.sh smoke`
 
 Features:
-!`./scripts/skill-context.sh features`
+!`./.projd/scripts/skill-context.sh features`
 
-Current branch: !`./scripts/skill-context.sh branch`
+Current branch: !`./.projd/scripts/skill-context.sh branch`
 
 ## Instructions
 
@@ -39,7 +39,7 @@ If smoke.sh exited non-zero, list the failures. These MUST be fixed before start
 
 Check if the current branch matches an in-progress feature (compare branch name to `branch` field in feature files).
 
-If matched: this is a resumed session. Read the full `progress/{id}.json` file and present the acceptance criteria.
+If matched: this is a resumed session. Read the full `.projd/progress/{id}.json` file and present the acceptance criteria.
 
 If not matched: scan for pending unblocked features (same logic as projd-hands-on). Read the full feature file for the top candidate and present it. Note that you need to create a branch first -- follow the projd-hands-on workflow.
 

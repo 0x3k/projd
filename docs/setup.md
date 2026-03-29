@@ -14,12 +14,22 @@
 cp -r projd/ my-new-project/
 cd my-new-project/
 git init
-chmod +x setup.sh scripts/*.sh
-./setup.sh                                           # interactive
-./setup.sh --name my-app --lang go --desc "My app"   # or scripted
+chmod +x setup.sh .projd/scripts/*.sh
+./setup.sh                                                        # interactive
+./setup.sh --name my-app --lang go --desc "My app"                # scripted (defaults to team mode)
+./setup.sh --name my-app --lang go --desc "My app" --mode solo    # solo mode
 ```
 
 Supported languages with built-in template blocks: `typescript`, `go`, `python`, `swift`, `kotlin`. Any language is accepted -- unsupported ones skip template activation.
+
+### Team vs Solo mode
+
+Setup asks whether projd files should be committed to git:
+
+- **Team** (default): All projd infrastructure (skills, hooks, scripts, `.claude/CLAUDE.md`) is committed. The whole team gets the projd workflow.
+- **Solo**: All projd infrastructure is added to `.gitignore`. Only you see it. Projd settings go to `.claude/settings.local.json` (already gitignored) so the team can maintain a shared `.claude/settings.json` independently.
+
+The mode is stored in `.projd/mode` (which is itself gitignored). Scripts and the upgrade mechanism respect the mode automatically.
 
 ## Scaffolding skill (recommended for repeat use)
 
@@ -36,13 +46,13 @@ pnpm dlx @0x3k/projd
 **Or with curl** (from anywhere):
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/scripts/remote-install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/.projd/scripts/remote-install.sh)
 ```
 
 **Or from a local clone:**
 
 ```bash
-./scripts/install-skill.sh
+./.projd/scripts/install-skill.sh
 ```
 
 This installs `/projd-create`, `/projd-adopt`, and an auto-updater to `~/.claude/skills/`. Skills check for updates once per day when invoked -- no manual upgrades needed.
@@ -55,8 +65,8 @@ This installs `/projd-create`, `/projd-adopt`, and an auto-updater to `~/.claude
 `/projd-create` asks developer-or-vibes, clones the latest template, runs setup, and either interviews you (developer) or auto-fills everything (vibes) to produce a complete CLAUDE.md. It can optionally scan for similar open-source projects for inspiration. When it finishes, the project is ready for `/projd-plan`.
 
 ```bash
-./scripts/install-skill.sh --check   # show diff if skills changed
-./scripts/install-skill.sh --remove  # uninstall all projd skills
+./.projd/scripts/install-skill.sh --check   # show diff if skills changed
+./.projd/scripts/install-skill.sh --remove  # uninstall all projd skills
 ```
 
 ## Adopting an existing project
@@ -71,37 +81,38 @@ cd your-existing-project
 The skill:
 
 1. Validates you're in a git repo that doesn't already have projd
-2. Interviews you (developer or vibes mode) for language, branch prefix, and push policy
+2. Interviews you (developer or vibes mode) for language, branch prefix, push policy, and team/solo mode
 3. Copies infrastructure files from the template (skills, hooks, scripts, lefthook.yml)
 4. Activates language blocks for your project's language(s)
-5. **Merges** `.claude/settings.json` non-destructively (adds permissions, hooks, status line without removing existing entries)
-6. **Appends** projd workflow sections to your existing `CLAUDE.md` (does not modify existing content)
-7. Creates `agent.json` with your configured policies
-8. Sets up `progress/` and `.projd/` directories
-9. Runs `init.sh` and `validate.sh`
+5. **Merges** Claude Code settings non-destructively (`.claude/settings.json` in team mode, `.claude/settings.local.json` in solo mode)
+6. **Creates** `.claude/CLAUDE.md` with projd workflow instructions (does not modify your root `CLAUDE.md`)
+7. Creates `.projd/agent.json` with your configured policies
+8. Sets up `.projd/progress/` and `.projd/` directories, writes mode
+9. In solo mode, adds projd files to `.gitignore`
+10. Runs `init.sh` and `validate.sh`
 
-After adoption, your project supports the full projd workflow: `/projd-plan`, `/projd-hands-on`, `/projd-hands-off`, session continuity, and `./scripts/upgrade.sh` for future template updates.
+After adoption, your project supports the full projd workflow: `/projd-plan`, `/projd-hands-on`, `/projd-hands-off`, session continuity, and `./.projd/scripts/upgrade.sh` for future template updates.
 
 ## Verifying your setup
 
 After running `setup.sh`, use the validation script to check that everything was configured correctly:
 
 ```bash
-./scripts/validate.sh            # check configuration
-./scripts/validate.sh --strict   # also run smoke tests
+./.projd/scripts/validate.sh            # check configuration
+./.projd/scripts/validate.sh --strict   # also run smoke tests
 ```
 
-This checks that `CLAUDE.md` is filled in, `agent.json` is valid, `lefthook.yml` has active hooks, `smoke.sh` has active checks, and feature files (if any) have valid schemas. Failures block; warnings are advisory.
+This checks that `CLAUDE.md` is filled in, `.projd/agent.json` is valid, `lefthook.yml` has active hooks, `smoke.sh` has active checks, and feature files (if any) have valid schemas. Failures block; warnings are advisory.
 
 ## Upgrading
 
 When the projd template gets new features or fixes, update your project with:
 
 ```bash
-./scripts/upgrade.sh              # upgrade from remote
-./scripts/upgrade.sh --dry-run    # preview what would change
-./scripts/upgrade.sh --local /path/to/projd   # upgrade from a local template copy
-./scripts/upgrade.sh --manifest   # regenerate manifest from current files (no upgrade)
+./.projd/scripts/upgrade.sh              # upgrade from remote
+./.projd/scripts/upgrade.sh --dry-run    # preview what would change
+./.projd/scripts/upgrade.sh --local /path/to/projd   # upgrade from a local template copy
+./.projd/scripts/upgrade.sh --manifest   # regenerate manifest from current files (no upgrade)
 ```
 
 ### How it works
@@ -125,7 +136,7 @@ If neither is set, use `--local <path>` to point to a local clone of the templat
 
 ### What it upgrades
 
-Only template-managed infrastructure files are tracked: hooks, skills, scripts, and `lefthook.yml`. Project-specific files (`CLAUDE.md`, `agent.json`, `README.md`, `progress/`) are never touched.
+Only template-managed infrastructure files are tracked: `.claude/CLAUDE.md`, hooks, skills, scripts, and `lefthook.yml`. Project-specific files (root `CLAUDE.md`, `.projd/agent.json`, `README.md`, `.projd/progress/`) are never touched.
 
 ### First upgrade
 
@@ -134,7 +145,7 @@ If no manifest exists (e.g., a project created before upgrade support was added)
 ## Bootstrapping the environment
 
 ```bash
-./scripts/init.sh
+./.projd/scripts/init.sh
 ```
 
 This installs Lefthook git hooks, makes Claude Code hook scripts executable, and installs language-specific dependencies (e.g., `npm install`, `go mod download`, `pip install` in a venv). It's idempotent -- safe to re-run. For multi-project workspaces, it bootstraps each sub-project automatically.

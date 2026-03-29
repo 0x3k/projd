@@ -6,7 +6,7 @@
 _PROJD_LIB_LOADED=1
 
 # --- Bootstrap ---
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." && pwd)"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/../.." && pwd)"
 
 # --- Colors ---
 R='\033[0m'
@@ -34,6 +34,24 @@ load_template_files() {
         line="${line%"${line##*[![:space:]]}"}"
         [ -n "$line" ] && TEMPLATE_FILES+=("$line")
     done < "$tf"
+}
+
+# --- Mode ---
+projd_mode() {
+    local mode_file="${PROJECT_DIR}/.projd/mode"
+    if [ -f "$mode_file" ]; then
+        cat "$mode_file"
+    else
+        echo "team"
+    fi
+}
+
+projd_settings_file() {
+    if [ "$(projd_mode)" = "solo" ]; then
+        echo ".claude/settings.local.json"
+    else
+        echo ".claude/settings.json"
+    fi
 }
 
 # --- Checksum ---

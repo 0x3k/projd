@@ -54,14 +54,14 @@ pre-push:
   commands:
     push-guard:
       run: |
-        if [ -f agent.json ]; then
-          ALLOW=$(jq -r '.git.allow_push // "false"' agent.json)
+        if [ -f .projd/agent.json ]; then
+          ALLOW=$(jq -r '.git.allow_push // "false"' .projd/agent.json)
           if [ "$ALLOW" = "false" ]; then
-            echo "Push blocked by agent.json (allow_push: false)"
+            echo "Push blocked by .projd/agent.json (allow_push: false)"
             echo "Operator override: git push --no-verify"
             exit 1
           elif [ "$ALLOW" = "feature" ]; then
-            PREFIX=$(jq -r '.git.branch_prefix // ""' agent.json)
+            PREFIX=$(jq -r '.git.branch_prefix // ""' .projd/agent.json)
             BRANCH=$(git branch --show-current 2>/dev/null || echo "")
             if [ -n "$PREFIX" ] && [ -n "$BRANCH" ]; then
               case "$BRANCH" in

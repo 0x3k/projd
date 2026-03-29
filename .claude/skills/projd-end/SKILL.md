@@ -8,27 +8,27 @@ You are wrapping up a work session. Commit, verify, deliver.
 
 ## Context
 
-Current branch: !`./scripts/skill-context.sh branch`
+Current branch: !`./.projd/scripts/skill-context.sh branch`
 
 Working tree:
-!`./scripts/skill-context.sh git-status`
+!`./.projd/scripts/skill-context.sh git-status`
 
 Changes:
-!`./scripts/skill-context.sh git-diff-stat`
+!`./.projd/scripts/skill-context.sh git-diff-stat`
 
-agent.json:
-!`./scripts/skill-context.sh agent-json`
+.projd/agent.json:
+!`./.projd/scripts/skill-context.sh agent-json`
 
 Features:
-!`./scripts/skill-context.sh features`
+!`./.projd/scripts/skill-context.sh features`
 
-Token usage: !`./scripts/skill-context.sh token-usage`
+Token usage: !`./.projd/scripts/skill-context.sh token-usage`
 
 ## Instructions
 
 ### Step 1: Commit
 
-Check `agent.json` for `auto_commit`.
+Check `.projd/agent.json` for `auto_commit`.
 
 If there are uncommitted changes (staged or unstaged):
 - If `auto_commit` is `true`: stage relevant files and commit with a descriptive message. Make incremental commits if there are logically separate changes.
@@ -36,7 +36,7 @@ If there are uncommitted changes (staged or unstaged):
 
 ### Step 2: Identify and update feature
 
-Match the current branch to a feature file (compare to `branch` field in progress/*.json).
+Match the current branch to a feature file (compare to `branch` field in .projd/progress/*.json).
 
 If matched, read the full feature file and verify EACH acceptance criterion:
 - For each criterion, check the codebase to confirm it is met.
@@ -45,7 +45,7 @@ If matched, read the full feature file and verify EACH acceptance criterion:
 
 ### Step 3: Smoke test
 
-Run `./scripts/smoke.sh`. If it fails:
+Run `./.projd/scripts/smoke.sh`. If it fails:
 - Do NOT mark the feature as `complete`, even if acceptance criteria pass.
 - Document failures in the feature notes.
 
@@ -60,7 +60,7 @@ Otherwise:
 
 ### Step 5: Push and PR
 
-Read `allow_push` from `agent.json`.
+Read `allow_push` from `.projd/agent.json`.
 
 If feature is `complete` AND (`allow_push` is `"feature"` or `true`):
 1. Push the branch: `git push -u origin {branch}`

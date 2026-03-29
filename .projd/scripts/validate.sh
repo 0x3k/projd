@@ -7,8 +7,8 @@ set -euo pipefail
 # blocks have been activated, and scripts run without errors.
 #
 # Usage:
-#   ./validate.sh           # run all checks
-#   ./validate.sh --strict  # also run smoke.sh (slower)
+#   ./.projd/scripts/validate.sh           # run all checks
+#   ./.projd/scripts/validate.sh --strict  # also run smoke.sh (slower)
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 cd "$PROJECT_DIR"
@@ -60,19 +60,28 @@ else
     fi
 fi
 
-# --- agent.json ---
+# --- .claude/CLAUDE.md ---
 echo ""
-echo "agent.json:"
-if [ ! -f agent.json ]; then
+echo ".claude/CLAUDE.md:"
+if [ ! -f .claude/CLAUDE.md ]; then
     check "file exists" "fail"
 else
     check "file exists" "pass"
-    if jq empty agent.json 2>/dev/null; then
+fi
+
+# --- agent.json ---
+echo ""
+echo ".projd/agent.json:"
+if [ ! -f .projd/agent.json ]; then
+    check "file exists" "fail"
+else
+    check "file exists" "pass"
+    if jq empty .projd/agent.json 2>/dev/null; then
         check "valid JSON" "pass"
     else
         check "valid JSON" "fail"
     fi
-    if jq -e '.git.protected_branches | length > 0' agent.json &>/dev/null; then
+    if jq -e '.git.protected_branches | length > 0' .projd/agent.json &>/dev/null; then
         check "protected branches defined" "pass"
     else
         check "protected branches defined" "warn"
@@ -101,26 +110,26 @@ fi
 
 # --- smoke.sh ---
 echo ""
-echo "scripts/smoke.sh:"
-if [ ! -f scripts/smoke.sh ]; then
+echo ".projd/scripts/smoke.sh:"
+if [ ! -f .projd/scripts/smoke.sh ]; then
     check "file exists" "fail"
-elif [ ! -x scripts/smoke.sh ]; then
+elif [ ! -x .projd/scripts/smoke.sh ]; then
     check "is executable" "fail"
 else
     check "is executable" "pass"
-    if grep -q '^run_check ' scripts/smoke.sh 2>/dev/null; then
+    if grep -q '^run_check ' .projd/scripts/smoke.sh 2>/dev/null; then
         check "has active checks (uncommented run_check)" "pass"
     else
         check "has active checks (uncommented run_check)" "fail"
     fi
 fi
 
-# --- scripts/init.sh ---
+# --- .projd/scripts/init.sh ---
 echo ""
-echo "scripts/init.sh:"
-if [ ! -f scripts/init.sh ]; then
+echo ".projd/scripts/init.sh:"
+if [ ! -f .projd/scripts/init.sh ]; then
     check "file exists" "fail"
-elif [ ! -x scripts/init.sh ]; then
+elif [ ! -x .projd/scripts/init.sh ]; then
     check "is executable" "fail"
 else
     check "is executable" "pass"
@@ -128,19 +137,19 @@ fi
 
 # --- progress/ ---
 echo ""
-echo "progress/:"
-if [ ! -d progress ]; then
+echo ".projd/progress/:"
+if [ ! -d .projd/progress ]; then
     check "directory exists" "fail"
 else
     check "directory exists" "pass"
-    FEATURE_COUNT=$(find progress -name '*.json' -not -name 'example-*' | wc -l | tr -d ' ')
+    FEATURE_COUNT=$(find .projd/progress -name '*.json' -not -name 'example-*' | wc -l | tr -d ' ')
     if [ "$FEATURE_COUNT" -gt 0 ]; then
         check "has real feature files (not just example)" "pass"
     else
         check "has real feature files (not just example)" "fail"
     fi
     # Validate each feature file
-    for f in progress/*.json; do
+    for f in .projd/progress/*.json; do
         [ -f "$f" ] || continue
         BASENAME=$(basename "$f")
         if jq -e '.id and .name and .acceptance_criteria' "$f" &>/dev/null; then
@@ -153,10 +162,10 @@ fi
 
 # --- status.sh ---
 echo ""
-echo "scripts/status.sh:"
-if [ ! -f scripts/status.sh ]; then
+echo ".projd/scripts/status.sh:"
+if [ ! -f .projd/scripts/status.sh ]; then
     check "file exists" "fail"
-elif [ ! -x scripts/status.sh ]; then
+elif [ ! -x .projd/scripts/status.sh ]; then
     check "is executable" "fail"
 else
     check "is executable" "pass"
@@ -166,7 +175,7 @@ fi
 if [ "$STRICT" = true ]; then
     echo ""
     echo "smoke.sh (execution):"
-    if ./scripts/smoke.sh &>/dev/null; then
+    if ./.projd/scripts/smoke.sh &>/dev/null; then
         check "exits cleanly" "pass"
     else
         check "exits cleanly" "fail"
@@ -179,6 +188,6 @@ echo "=== validate.sh: $PASS passed, $FAIL failed, $WARN warnings ==="
 
 if [ "$FAIL" -gt 0 ]; then
     echo ""
-    echo "Fix the failures above, then re-run ./scripts/validate.sh"
+    echo "Fix the failures above, then re-run ./.projd/scripts/validate.sh"
     exit 1
 fi

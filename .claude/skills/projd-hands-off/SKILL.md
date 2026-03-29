@@ -10,16 +10,16 @@ You are a coordinator launching parallel agents to work on independent features 
 
 ## Context
 
-agent.json:
-!`./scripts/skill-context.sh agent-json`
+.projd/agent.json:
+!`./.projd/scripts/skill-context.sh agent-json`
 
 Features:
-!`./scripts/skill-context.sh features`
+!`./.projd/scripts/skill-context.sh features`
 
-Current branch: !`./scripts/skill-context.sh branch`
+Current branch: !`./.projd/scripts/skill-context.sh branch`
 
 CLAUDE.md overview:
-!`./scripts/skill-context.sh claude-md`
+!`./.projd/scripts/skill-context.sh claude-md`
 
 ## Arguments
 
@@ -29,7 +29,7 @@ CLAUDE.md overview:
 
 ### 1. Read dispatch config
 
-Read `agent.json` and extract the dispatch settings:
+Read `.projd/agent.json` and extract the dispatch settings:
 - `dispatch.max_agents`: maximum concurrent agents (default 20 if missing)
 - `dispatch.auto_review`: whether to auto-review and merge PRs (default false if missing)
 
@@ -52,7 +52,7 @@ If `$ARGUMENTS` contains `--dry-run`:
 
 ### 4. Read full feature files
 
-For each feature to dispatch, read the full `progress/{id}.json` to get acceptance criteria and description.
+For each feature to dispatch, read the full `.projd/progress/{id}.json` to get acceptance criteria and description.
 
 ### 5. Spawn worker agents
 
@@ -65,12 +65,12 @@ Spawn an Agent with:
 Each agent prompt must include:
 - The feature ID, name, and full description
 - All acceptance criteria
-- The branch prefix from agent.json (agent must create branch `{prefix}{feature-id}`)
+- The branch prefix from .projd/agent.json (agent must create branch `{prefix}{feature-id}`)
 - Instructions to:
   1. Create the feature branch: `git checkout -b {prefix}{feature-id}`
-  2. Update `progress/{feature-id}.json` with `status: "in_progress"` and `branch`
+  2. Update `.projd/progress/{feature-id}.json` with `status: "in_progress"` and `branch`
   3. Implement all acceptance criteria
-  4. Run `./scripts/smoke.sh` to verify
+  4. Run `./.projd/scripts/smoke.sh` to verify
   5. Commit all changes with descriptive messages
   6. If smoke passes and all criteria met: set `status: "complete"`, push branch, create PR via `gh pr create`
   7. If incomplete: set notes with progress, write HANDOFF.md
@@ -101,13 +101,13 @@ Each review agent prompt must include:
 
   **Step A -- Checkout and verify:**
   1. Check out the PR: `gh pr checkout <number>`
-  2. Run `./scripts/smoke.sh`
+  2. Run `./.projd/scripts/smoke.sh`
   3. Review the diff (`gh pr diff <number>`) against each acceptance criterion
   4. Determine: PASS (all criteria met, smoke passes) or FAIL (with specific issues)
 
   **Step B -- If PASS:**
   1. Merge the PR: `gh pr merge <number> --squash --delete-branch`
-  2. In the **main repo** (not the worktree), pull latest main and update `progress/{feature-id}.json`: set `"status": "complete"`; commit this update to main
+  2. In the **main repo** (not the worktree), pull latest main and update `.projd/progress/{feature-id}.json`: set `"status": "complete"`; commit this update to main
   3. Remove the feature's worktree: `git worktree remove --force <path>` (if it exists)
   4. Report: merged successfully
 
@@ -119,10 +119,10 @@ Each review agent prompt must include:
      - The specific issues found
      - The acceptance criteria
      - Instructions to: check out the branch, fix the issues, run smoke, commit, and push
-  4. After fixes (direct or via subagent): re-run `./scripts/smoke.sh`
+  4. After fixes (direct or via subagent): re-run `./.projd/scripts/smoke.sh`
   5. If smoke passes now:
      a. Merge the PR via `gh pr merge <number> --squash --delete-branch`
-     b. In the **main repo** (not the worktree), pull latest main and update `progress/{feature-id}.json`: set `"status": "complete"`; commit this update to main
+     b. In the **main repo** (not the worktree), pull latest main and update `.projd/progress/{feature-id}.json`: set `"status": "complete"`; commit this update to main
      c. Remove the feature's worktree: `git worktree remove --force <path>` (if it exists)
   6. If still failing: leave a review comment on the PR (`gh pr review <number> --comment --body "<issues>"`) and report as needs-attention
 
@@ -142,11 +142,11 @@ Present a summary table:
 
 ## Guardrails
 
-- Respect `max_agents` from `agent.json` dispatch config. Default to 20 if not set.
+- Respect `max_agents` from `.projd/agent.json` dispatch config. Default to 20 if not set.
 - Do NOT retry failed worker agents automatically. Report failures for the operator to decide.
 - Each agent gets a focused, single-feature prompt. Do not include unrelated features or exploration instructions.
 - Review agents must not modify code unrelated to the issues they found.
-- If `allow_push` is `false` in agent.json, skip both pushing and auto-review (there are no PRs to review).
+- If `allow_push` is `false` in .projd/agent.json, skip both pushing and auto-review (there are no PRs to review).
 
 ## Output
 
