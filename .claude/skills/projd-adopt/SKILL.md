@@ -11,30 +11,23 @@ You add projd infrastructure to an existing, working project. You copy skills, h
 BOILERPLATE_REMOTE_URL: {{BOILERPLATE_REMOTE_URL}}
 BOILERPLATE_LOCAL_PATH: {{BOILERPLATE_LOCAL_PATH}}
 
-## Context
-
-Auto-update:
-!`bash "$HOME/.claude/skills/.projd-updater.sh" 2>&1 || true`
-
-Current directory:
-!`pwd`
-
-GitHub CLI:
-!`gh auth status 2>&1 || echo "NOT_AUTHENTICATED"`
-
-Existing files:
-!`ls -la CLAUDE.md .projd/agent.json lefthook.yml .claude/settings.json 2>/dev/null || echo "(none found)"`
-!`ls -d .projd .projd/progress .projd/scripts .claude/hooks .claude/skills 2>/dev/null || echo "(no projd dirs)"`
-
 ## Arguments
 
 `$ARGUMENTS`
 
 ## Instructions
 
-### Pre-flight: update check
+### Pre-flight: gather context and check for updates
 
-If the auto-update output above contains `PROJD_UPDATED`, stop immediately and tell the user:
+Run these commands to gather context before proceeding:
+
+1. `bash "$HOME/.claude/skills/.projd-updater.sh"` -- check for skill updates
+2. `pwd` -- confirm current directory
+3. `gh auth status` -- check GitHub CLI authentication
+4. `ls -la CLAUDE.md .projd/agent.json lefthook.yml .claude/settings.json` -- check for existing files
+5. `ls -d .projd .projd/progress .projd/scripts .claude/hooks .claude/skills` -- check for existing projd directories
+
+If the updater output contains `PROJD_UPDATED`, stop immediately and tell the user:
 
 > Skills were updated to the latest version. Please re-run `/projd-adopt`.
 
