@@ -35,7 +35,7 @@ __pycache__/
 lefthook-local.yml
 
 # Session state (ephemeral, not committed)
-HANDOFF.md
+.projd/HANDOFF.md
 
 # Claude Code local overrides
 .claude/settings.local.json

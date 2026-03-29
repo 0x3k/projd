@@ -57,7 +57,7 @@ This project includes a skill family called `projd` (project daemon) that automa
 The `projd-start` skill handles orientation automatically. It:
 
 1. Runs `./.projd/scripts/status.sh` to see git state, progress, and handoff context
-2. Reads `HANDOFF.md` for context from the previous session (if it exists)
+2. Reads `.projd/HANDOFF.md` for context from the previous session (if it exists)
 3. Runs `./.projd/scripts/smoke.sh` to verify nothing is currently broken
 4. Identifies the current feature from the branch, or finds the highest-priority pending unblocked feature
 
@@ -70,7 +70,7 @@ The `projd-end` skill handles wrap-up automatically. It:
    - Sets `"status": "complete"` if all acceptance criteria are met and smoke passes
    - Keeps `"status": "in_progress"` if partially done, with notes
 3. Pushes the feature branch and creates a PR (if `allow_push` permits)
-4. Writes `HANDOFF.md` if work is incomplete, or deletes it if complete
+4. Writes `.projd/HANDOFF.md` if work is incomplete, or deletes it if complete
 5. Runs `./.projd/scripts/smoke.sh` as a final gate
 
 ### Feature Workflow

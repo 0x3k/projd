@@ -71,17 +71,17 @@ else
     echo "Not a git repository"
 fi
 
-# --- HANDOFF.md ---
+# --- .projd/HANDOFF.md ---
 echo ""
-if [ -f HANDOFF.md ]; then
-    echo "--- HANDOFF.md (previous session left context) ---"
-    head -10 HANDOFF.md
-    LINES=$(wc -l < HANDOFF.md | tr -d ' ')
+if [ -f .projd/HANDOFF.md ]; then
+    echo "--- .projd/HANDOFF.md (previous session left context) ---"
+    head -10 .projd/HANDOFF.md
+    LINES=$(wc -l < .projd/HANDOFF.md | tr -d ' ')
     if [ "$LINES" -gt 10 ]; then
         echo "  ... ($LINES lines total)"
     fi
 else
-    echo "--- No HANDOFF.md (clean start) ---"
+    echo "--- No .projd/HANDOFF.md (clean start) ---"
 fi
 
 # --- Progress ---
