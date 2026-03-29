@@ -25,13 +25,21 @@ Supported languages with built-in template blocks: `typescript`, `go`, `python`,
 
 Install the projd skills once, then create or adopt projects from any Claude Code session.
 
-**One-line install** (from anywhere):
+**Install with npm/pnpm** (from anywhere):
+
+```bash
+npx @0x3k/projd
+# or
+pnpm dlx @0x3k/projd
+```
+
+**Or with curl** (from anywhere):
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/scripts/remote-install.sh)
 ```
 
-Or from a local clone:
+**Or from a local clone:**
 
 ```bash
 ./scripts/install-skill.sh
