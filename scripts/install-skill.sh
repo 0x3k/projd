@@ -11,8 +11,7 @@ set -euo pipefail
 #   ./scripts/install-skill.sh --check   Show diff if already installed
 #   ./scripts/install-skill.sh --remove  Remove all installed skills
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 SKILLS=("projd-create" "projd-adopt")
 

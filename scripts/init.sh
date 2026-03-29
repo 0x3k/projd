@@ -7,9 +7,7 @@ set -euo pipefail
 # dependencies, set up git hooks, and verify the project builds.
 # Idempotent -- safe to re-run.
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-cd "$PROJECT_DIR"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 echo "=== Initializing project ==="
 

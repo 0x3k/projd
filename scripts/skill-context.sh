@@ -19,9 +19,7 @@ set -euo pipefail
 #   ./scripts/skill-context.sh smoke
 #   ./scripts/skill-context.sh gh-auth
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-cd "$PROJECT_DIR"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 cmd="${1:-help}"
 

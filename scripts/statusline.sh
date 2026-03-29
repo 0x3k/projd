@@ -72,14 +72,14 @@ if git rev-parse --is-inside-work-tree &>/dev/null; then
     [ "$wt_n" -lt 0 ] && wt_n=0
 fi
 
-# --- Colors ---
-R='\033[0m'
-DIM='\033[2m'
-GRN='\033[32m'
-YLW='\033[33m'
-RED='\033[31m'
-CYN='\033[36m'
-BLD='\033[1m'
+# --- Colors (from lib.sh if available, inline fallback for resilience) ---
+_lib="${CLAUDE_PROJECT_DIR:-.}/scripts/lib.sh"
+if [ -f "$_lib" ]; then
+    source "$_lib"
+else
+    R='\033[0m'; DIM='\033[2m'; GRN='\033[32m'; YLW='\033[33m'
+    RED='\033[31m'; CYN='\033[36m'; BLD='\033[1m'
+fi
 
 # Context color by usage
 if [ "$ctx_pct" -ge 90 ]; then CC="$RED"

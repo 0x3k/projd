@@ -41,4 +41,5 @@ HANDOFF.md
 .claude/settings.local.json
 
 # projd upgrade state (local, not committed)
-.projd/
+.projd/*
+!.projd/template-files.txt

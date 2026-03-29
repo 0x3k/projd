@@ -11,9 +11,7 @@ set -euo pipefail
 #   ./smoke.sh lint      # run only the "lint" check
 #   ./smoke.sh typecheck # run only the "typecheck" check
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-cd "$PROJECT_DIR"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib.sh"
 
 PASS=0
 FAIL=0

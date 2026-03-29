@@ -46,9 +46,7 @@ else
 fi
 
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-cd "$PROJECT_DIR"
+source "$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)/lib.sh"
 
 INTERVAL=5
 ONCE=false
@@ -74,16 +72,9 @@ else
 fi
 FEATURES_CADENCE=4  # reload feature JSONs every N ticks (~1s at 250ms tick)
 
-# --- Colors ---
-R='\033[0m'
-DIM='\033[2m'
-GRN='\033[32m'
-YLW='\033[33m'
-RED='\033[31m'
-CYN='\033[36m'
+# Extra colors not in lib.sh
 BLU='\033[34m'
 MAG='\033[35m'
-BLD='\033[1m'
 INV='\033[7m'
 
 # Wave colors -- cycle through for visual grouping
