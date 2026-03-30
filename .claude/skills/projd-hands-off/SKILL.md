@@ -75,7 +75,7 @@ Each agent prompt must include:
   3. Implement all acceptance criteria
   4. Run `./.projd/scripts/smoke.sh` to verify
   5. Commit all changes with descriptive messages
-  6. If smoke passes and all criteria met: set `status: "complete"`, push branch, create PR via `gh pr create --base {base_branch}`
+  6. If smoke passes and all criteria met: set `status: "complete"`, push branch, create PR via `gh pr create --base {base_branch}`. Include a **Test plan** section in the PR body: run every test you can (smoke, unit tests, lint, syntax checks) and mark results with `[x]`/`[ ]`. Only leave unchecked items that require manual testing.
   7. If incomplete: set notes with progress, write .projd/HANDOFF.md
 - Key conventions from CLAUDE.md (code style, test patterns)
 

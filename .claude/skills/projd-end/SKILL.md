@@ -66,12 +66,19 @@ If feature is `complete` AND (`allow_push` is `"feature"` or `true`):
 1. Push the branch: `git push -u origin {branch}`
 2. Create a PR using `gh pr create`:
    - Title: the feature name
-   - Body: include a summary of changes, the acceptance criteria as a checked checklist, and a **Token Economy** section with the token usage from the context above (input, output, total). Example:
+   - Body: include a summary of changes, the acceptance criteria as a checked checklist, a **Test plan** section, and a **Token Economy** section with the token usage from the context above (input, output, total).
+   - Base branch: read `base_branch` from the feature file. If not set, default to `main`.
+   - **Test plan**: list verifiable checks for the PR. Run every test you can execute yourself (unit tests, smoke tests, linting, syntax checks, grep-based verifications) and mark the results with `[x]` (passed) or `[ ]` (failed/skipped). Only leave items unchecked if they require manual or E2E testing you cannot perform. Example:
      ```
+     ## Test plan
+     - [x] `smoke.sh` passes
+     - [x] Unit tests pass (`go test ./...`)
+     - [x] No lint errors
+     - [ ] E2E: verify login flow in browser
+
      ## Token Economy
      1.2M input, 45.3k output (1.3M total, 8.5M cache read)
      ```
-   - Base branch: read `base_branch` from the feature file. If not set, default to `main`.
 3. Record the PR URL in the feature file `notes` field.
 
 If `allow_push` is `false`: skip push and PR. Note in output that the operator should handle pushing.
