@@ -62,17 +62,20 @@ Spawn an Agent with:
 - `isolation: "worktree"` -- gives each agent its own git working directory
 - `run_in_background: true` -- agents work in parallel
 
+Determine the **base branch** from the "Current branch" in the Context section above. This is the branch all feature branches will be created from and all PRs will target.
+
 Each agent prompt must include:
 - The feature ID, name, and full description
 - All acceptance criteria
 - The branch prefix from .projd/agent.json (agent must create branch `{prefix}{feature-id}`)
+- The **base branch** (so the agent knows what to target for PRs)
 - Instructions to:
   1. Create the feature branch: `git checkout -b {prefix}{feature-id}`
-  2. Update `.projd/progress/{feature-id}.json` with `status: "in_progress"` and `branch`
+  2. Update `.projd/progress/{feature-id}.json` with `status: "in_progress"`, `branch`, and `"base_branch": "{base_branch}"`
   3. Implement all acceptance criteria
   4. Run `./.projd/scripts/smoke.sh` to verify
   5. Commit all changes with descriptive messages
-  6. If smoke passes and all criteria met: set `status: "complete"`, push branch, create PR via `gh pr create`
+  6. If smoke passes and all criteria met: set `status: "complete"`, push branch, create PR via `gh pr create --base {base_branch}`
   7. If incomplete: set notes with progress, write .projd/HANDOFF.md
 - Key conventions from CLAUDE.md (code style, test patterns)
 
@@ -107,7 +110,7 @@ Each review agent prompt must include:
 
   **Step B -- If PASS:**
   1. Merge the PR: `gh pr merge <number> --squash --delete-branch`
-  2. In the **main repo** (not the worktree), pull latest main and update `.projd/progress/{feature-id}.json`: set `"status": "complete"`; commit this update to main
+  2. In the **main repo** (not the worktree), pull the latest base branch and update `.projd/progress/{feature-id}.json`: set `"status": "complete"`; commit this update to the base branch
   3. Remove the feature's worktree: `git worktree remove --force <path>` (if it exists)
   4. Report: merged successfully
 
@@ -122,7 +125,7 @@ Each review agent prompt must include:
   4. After fixes (direct or via subagent): re-run `./.projd/scripts/smoke.sh`
   5. If smoke passes now:
      a. Merge the PR via `gh pr merge <number> --squash --delete-branch`
-     b. In the **main repo** (not the worktree), pull latest main and update `.projd/progress/{feature-id}.json`: set `"status": "complete"`; commit this update to main
+     b. In the **main repo** (not the worktree), pull the latest base branch and update `.projd/progress/{feature-id}.json`: set `"status": "complete"`; commit this update to the base branch
      c. Remove the feature's worktree: `git worktree remove --force <path>` (if it exists)
   6. If still failing: leave a review comment on the PR (`gh pr review <number> --comment --body "<issues>"`) and report as needs-attention
 
