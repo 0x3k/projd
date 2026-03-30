@@ -43,11 +43,14 @@ If no eligible feature is found, report that and stop.
 
 ### 3. Create branch and update status
 
+Record the current branch as the base branch (from the Context section above). This is where the PR will target when the feature is done.
+
 Run: `git checkout -b {branch_prefix}{feature-id}`
 
 Update `.projd/progress/{feature-id}.json`:
 - Set `"status": "in_progress"`
 - Set `"branch": "{branch_prefix}{feature-id}"`
+- Set `"base_branch": "{the branch you were on before checkout}"` (e.g. `main`, `develop`, `release/v2`)
 
 ### 4. Present the work plan
 

@@ -71,7 +71,7 @@ If feature is `complete` AND (`allow_push` is `"feature"` or `true`):
      ## Token Economy
      1.2M input, 45.3k output (1.3M total, 8.5M cache read)
      ```
-   - Base branch: `main`
+   - Base branch: read `base_branch` from the feature file. If not set, default to `main`.
 3. Record the PR URL in the feature file `notes` field.
 
 If `allow_push` is `false`: skip push and PR. Note in output that the operator should handle pushing.
