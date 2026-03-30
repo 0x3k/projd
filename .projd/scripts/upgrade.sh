@@ -24,10 +24,6 @@ LOCAL_PATH=""
 cd "$PROJECT_DIR"
 load_template_files
 
-if [ ${#TEMPLATE_FILES[@]} -eq 0 ]; then
-    log_warn "No template files found (.projd/template-files.txt is missing or empty)"
-fi
-
 # --- Parse flags ---
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -119,6 +115,23 @@ fi
 # Cleanup on exit
 if [ "$CLEANUP_TEMPLATE" = true ]; then
     trap 'rm -rf "$TEMPLATE_DIR"' EXIT
+fi
+
+# Reload template file list from the fetched template (the project may not
+# have template-files.txt yet if this is the first upgrade).
+if [ -f "$TEMPLATE_DIR/.projd/template-files.txt" ]; then
+    TEMPLATE_FILES=()
+    while IFS= read -r _line || [ -n "$_line" ]; do
+        _line="${_line%%#*}"
+        _line="${_line#"${_line%%[![:space:]]*}"}"
+        _line="${_line%"${_line##*[![:space:]]}"}"
+        [ -n "$_line" ] && TEMPLATE_FILES+=("$_line")
+    done < "$TEMPLATE_DIR/.projd/template-files.txt"
+fi
+
+if [ ${#TEMPLATE_FILES[@]} -eq 0 ]; then
+    echo -e "${RED}No template files to upgrade (template-files.txt is empty).${R}"
+    exit 1
 fi
 
 # --- Check manifest exists ---
