@@ -442,10 +442,13 @@ Installed:
   .claude/CLAUDE.md created (projd workflow instructions)
   Mode:    <team|solo>
 
+Note: New skills won't appear in autocomplete until you start a new conversation.
+
 Next steps:
   1. Review the changes: git diff
   2. Commit when ready
-  3. Plan features: /projd-plan <your requirements>
+  3. Exit and re-run claude to pick up the new skills
+  4. Plan features: /projd-plan <your requirements>
 ```
 
 If there were skipped files (from conflict resolution), list them and suggest the user merge manually.

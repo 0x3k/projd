@@ -11,9 +11,9 @@ set -euo pipefail
 # with single-key commands. Auto-refreshes in the background.
 #
 # Usage:
-#   ./.projd/scripts/monitor.sh            # interactive dashboard (default 5s refresh)
+#   ./.projd/scripts/monitor.sh            # interactive dashboard (~1s tick, 5s full refresh)
 #   ./.projd/scripts/monitor.sh --watch    # same as above (kept for compat)
-#   ./.projd/scripts/monitor.sh --watch 3  # custom refresh interval
+#   ./.projd/scripts/monitor.sh --watch 3  # custom full refresh interval
 #   ./.projd/scripts/monitor.sh --once     # print snapshot and exit (non-interactive)
 #
 # Navigation:
@@ -400,9 +400,9 @@ load_features() {
 
             # Check if all blockers were assigned in a previous wave (or are complete)
             local all_resolved=true
-            IFS=', ' read -ra deps <<< "$bl"
-            for dep in "${deps[@]}"; do
-                dep=$(echo "$dep" | tr -d ' ')
+            local _old_ifs="${IFS}"; IFS=', '; set -- $bl; IFS="${_old_ifs}"
+            for dep in "$@"; do
+                dep="${dep// /}"
                 [ -z "$dep" ] && continue
                 local dep_status
                 dep_status=$(_status_of_id "$dep")
@@ -871,8 +871,8 @@ render() {
             # Show enriched blockers for non-complete features
             if [ -n "$blocked_by" ] && [ "$fstatus" != "complete" ]; then
                 local enriched_blockers=""
-                IFS=', ' read -ra _bdeps <<< "$blocked_by"
-                for _bdep in "${_bdeps[@]}"; do
+                local _old_ifs="${IFS}"; IFS=', '; set -- $blocked_by; IFS="${_old_ifs}"
+                for _bdep in "$@"; do
                     _bdep="${_bdep// /}"
                     [ -z "$_bdep" ] && continue
                     local _bst="" _bagent="" _belapsed=""
@@ -1378,9 +1378,9 @@ if [ "$ONCE" = true ]; then
             # Enriched blockers
             if [ -n "$blocked_by" ] && [ "$fstatus" != "complete" ]; then
                 enriched=""
-                IFS=', ' read -ra _once_deps <<< "$blocked_by"
-                for _od in "${_once_deps[@]}"; do
-                    _od=$(echo "$_od" | tr -d ' ')
+                local _old_ifs="${IFS}"; IFS=', '; set -- $blocked_by; IFS="${_old_ifs}"
+                for _od in "$@"; do
+                    _od="${_od// /}"
                     [ -z "$_od" ] && continue
                     _ost="" _oagent="" _oelapsed=""
                     for ((bi=0; bi<FEATURE_COUNT; bi++)); do

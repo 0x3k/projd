@@ -245,7 +245,7 @@ The `dispatch.max_agents` default of 20 is fine for most projects. Do not ask ab
 
 Skip this step if the user chose developer mode.
 
-In vibes mode, the agent should be able to work without manual approval prompts. Update the settings file in the target path (`.claude/settings.local.json` if solo mode, `.claude/settings.json` if team mode) to expand the `permissions.allow` list so common commands are auto-approved.
+In vibes mode, the agent should be able to work without manual approval prompts. Determine the target settings file: `.claude/settings.local.json` if solo mode, `.claude/settings.json` if team mode. Read the file first (it was created by `setup.sh`), then use Edit to update it.
 
 Set `permissions.allow` to:
 
