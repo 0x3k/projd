@@ -16,7 +16,7 @@ import { homedir } from "node:os";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageDir = join(__dirname, "..");
-const remoteUrl = "https://github.com/0x3k/projd.git";
+const remoteUrl = "https://github.com/0spoon/projd.git";
 const skills = ["projd-create", "projd-adopt"];
 const skillsDir = join(homedir(), ".claude", "skills");
 

@@ -99,7 +99,7 @@ else
 
     # Fallback: hardcoded template URL
     if [ -z "$REMOTE_URL" ]; then
-        REMOTE_URL="https://github.com/0x3k/projd.git"
+        REMOTE_URL="https://github.com/0spoon/projd.git"
     fi
 
     echo -e "${DIM}Fetching template from ${REMOTE_URL}...${R}"

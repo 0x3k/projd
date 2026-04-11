@@ -38,11 +38,11 @@ trap 'rm -f "$TMPRC"' EXIT
 echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$TMPRC"
 
 VERSION=$(jq -r '.version' package.json)
-echo -e "${DIM}Publishing @0x3k/projd@${VERSION}...${R}"
+echo -e "${DIM}Publishing @0spoon/projd@${VERSION}...${R}"
 
 if [ "$DRY_RUN" = true ]; then
     npm publish --access public --userconfig "$TMPRC" --dry-run
 else
     npm publish --access public --userconfig "$TMPRC"
-    echo -e "${GRN}Published @0x3k/projd@${VERSION}${R}"
+    echo -e "${GRN}Published @0spoon/projd@${VERSION}${R}"
 fi

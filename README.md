@@ -1,6 +1,6 @@
 # projd
 
-[![npm version](https://img.shields.io/npm/v/@0x3k/projd)](https://www.npmjs.com/package/@0x3k/projd)
+[![npm version](https://img.shields.io/npm/v/@0spoon/projd)](https://www.npmjs.com/package/@0spoon/projd)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Built for Claude Code](https://img.shields.io/badge/Built_for-Claude_Code-6B5CE7)](https://claude.ai/code)
 
@@ -106,15 +106,15 @@ Full guide: [Setup](docs/setup.md)
 **Install with npm/pnpm** (from anywhere):
 
 ```bash
-npx @0x3k/projd
+npx @0spoon/projd
 # or
-pnpm dlx @0x3k/projd
+pnpm dlx @0spoon/projd
 ```
 
 **Or with curl** (from anywhere):
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/.projd/scripts/remote-install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/0spoon/projd/main/.projd/scripts/remote-install.sh)
 ```
 
 **Or from a local clone:**

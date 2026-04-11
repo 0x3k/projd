@@ -224,7 +224,7 @@ function initQuickStartTerminal() {
 
   player
     .prompt('$ ')
-    .type('npx @0x3k/projd')
+    .type('npx @0spoon/projd')
     .pause(300)
     .output(`<span class="term-output">  Fetching projd...</span>`)
     .output(`<span class="term-success">  Skills installed to ~/.claude/skills/</span>`)

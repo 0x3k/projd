@@ -6,9 +6,9 @@ set -euo pipefail
 # Clones the projd repo to a temp directory, runs install-skill.sh, cleans up.
 #
 # Usage:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/.projd/scripts/remote-install.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/0spoon/projd/main/.projd/scripts/remote-install.sh)
 
-REPO_URL="https://github.com/0x3k/projd.git"
+REPO_URL="https://github.com/0spoon/projd.git"
 
 T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT

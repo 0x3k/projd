@@ -38,15 +38,15 @@ Install the projd skills once, then create or adopt projects from any Claude Cod
 **Install with npm/pnpm** (from anywhere):
 
 ```bash
-npx @0x3k/projd
+npx @0spoon/projd
 # or
-pnpm dlx @0x3k/projd
+pnpm dlx @0spoon/projd
 ```
 
 **Or with curl** (from anywhere):
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/0x3k/projd/main/.projd/scripts/remote-install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/0spoon/projd/main/.projd/scripts/remote-install.sh)
 ```
 
 **Or from a local clone:**
@@ -131,7 +131,7 @@ The upgrade script looks for the template URL in this order:
 
 1. `.projd/source` (written by `setup.sh` and `/projd-create` at scaffold time)
 2. A git remote named `projd` (`git remote add projd <url>`)
-3. Hardcoded default: `https://github.com/0x3k/projd.git`
+3. Hardcoded default: `https://github.com/0spoon/projd.git`
 
 To override all of these, use `--local <path>` to point to a local clone of the template. If you use a fork, write your fork URL to `.projd/source` so upgrades pull from there instead of the default.
 
