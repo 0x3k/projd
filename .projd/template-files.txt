@@ -3,6 +3,7 @@
 .claude/CLAUDE.md
 .claude/hooks/check-git-policy.sh
 .claude/hooks/check-path-guard.sh
+.claude/hooks/check-worktree-isolation.sh
 .claude/skills/projd-start/SKILL.md
 .claude/skills/projd-end/SKILL.md
 .claude/skills/projd-plan/SKILL.md

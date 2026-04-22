@@ -109,6 +109,12 @@ Rules:
 
 Use `--dry-run` to preview the dispatch plan without spawning agents.
 
+### Known Gotchas (parallel sessions)
+
+- **Resolving conflicts without force-push**: `.projd/agent.json` typically sets `allow_force_push: false`, and GitHub's "Update branch" button returns 422 on conflicts. When a feature branch falls behind `main`, run `git merge origin/main` on the feature branch -- do NOT rebase. The PR's squash-merge flattens the extra merge commit, so the history stays clean.
+- **Avoid monolithic bootstrap files**: If every feature ends up editing the same file (a central `main.go`, `app.py`, `index.ts`, route table, etc.), every parallel feature branch will collide there after the first merge. Split that file by concern (routes vs. workers vs. helpers) so features land in different files. This is a structural fix; no amount of orchestration can rescue a single-file bootstrap.
+- **Worktree writes are hook-guarded**: `.claude/hooks/check-worktree-isolation.sh` blocks `Write`/`Edit`/`NotebookEdit` calls from a worktree session whose target path resolves into the main repo tree or a sibling worktree. Tooling that resolves files relative to the enclosing module root (codegen, build caches) can otherwise leak writes across the worktree boundary. If the hook denies an edit, retarget the path under the active worktree rather than trying to bypass it.
+
 ### Planning Sessions
 
 Use `/projd-plan` for planning:
