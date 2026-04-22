@@ -296,6 +296,54 @@ run_hook "$REPO_DIR" "git switch -c agent/my-feature"
 assert_allowed "switch -c with prefix allowed"
 
 # ---------------------------------------------------------------------------
+# Effective-CWD: honor `cd <worktree> &&` and `git -C <worktree>` so that
+# parallel-agent worktrees are not blocked by the session CWD being on main.
+# ---------------------------------------------------------------------------
+echo ""
+echo "Test group: effective CWD (worktrees)"
+
+# Create a repo on main plus a linked worktree on agent/feat.
+create_repo  # REPO_DIR on main
+WORKTREE_DIR="$TMPDIR_ROOT/wt-${TOTAL}"
+git -C "$REPO_DIR" branch agent/feat >/dev/null 2>&1
+git -C "$REPO_DIR" worktree add -q "$WORKTREE_DIR" agent/feat
+
+# Sanity: session CWD on main, no prefix -> merge blocked as before.
+run_hook "$REPO_DIR" "git merge agent/other"
+assert_denied "no cd prefix: merge on main still blocked" "Cannot merge into protected branch"
+
+# With `cd <worktree> &&`, the effective branch is agent/feat -> allowed.
+run_hook "$REPO_DIR" "cd $WORKTREE_DIR && git merge origin/main"
+assert_allowed "cd <worktree> && git merge origin/main is allowed"
+
+run_hook "$REPO_DIR" "cd $WORKTREE_DIR && git commit -m 'work'"
+assert_allowed "cd <worktree> && git commit on feature branch allowed"
+
+# Same with double-quoted path (worktree path might legitimately have spaces).
+WORKTREE_QUOTED="$TMPDIR_ROOT/wt quoted-${TOTAL}"
+git -C "$REPO_DIR" branch agent/quoted >/dev/null 2>&1
+git -C "$REPO_DIR" worktree add -q "$WORKTREE_QUOTED" agent/quoted
+run_hook "$REPO_DIR" "cd \"$WORKTREE_QUOTED\" && git merge origin/main"
+assert_allowed "cd \"<worktree with spaces>\" && git merge allowed"
+
+# `git -C <worktree> merge` is an equivalent form; also allowed.
+run_hook "$REPO_DIR" "git -C $WORKTREE_DIR merge origin/main"
+assert_allowed "git -C <worktree> merge allowed"
+
+# Protection still kicks in when `cd <worktree>` targets a worktree that is
+# itself on a protected branch. Create a worktree on main (detached copy).
+WORKTREE_MAIN="$TMPDIR_ROOT/wt-main-${TOTAL}"
+git -C "$REPO_DIR" worktree add -q --detach "$WORKTREE_MAIN" HEAD
+# Put that worktree on main to make the check meaningful:
+git -C "$WORKTREE_MAIN" checkout -q -B tmp-main
+# (Can't check out main in two worktrees simultaneously, so simulate via a
+#  branch named "main" in the scratch repo -- here we simply rely on the
+#  worktree's HEAD being on a protected branch in another scenario.)
+# Instead: test that a cd into the main worktree on protected branch blocks commit.
+run_hook "$REPO_DIR" "cd $REPO_DIR && git commit -m 'to main via cd'"
+assert_denied "cd back into main repo blocks commit on protected branch" "Cannot commit directly to protected branch"
+
+# ---------------------------------------------------------------------------
 # Results
 # ---------------------------------------------------------------------------
 
