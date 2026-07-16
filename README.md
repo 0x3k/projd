@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> **projd is retired and this repository is archived.** It is no longer maintained.
+> For 0spoon's current work, see [**Seamless**](https://github.com/0spoon/seamless).
+
 # projd
 
 [![npm version](https://img.shields.io/npm/v/@0spoon/projd)](https://www.npmjs.com/package/@0spoon/projd)
